@@ -99,12 +99,75 @@ proj_adata.write('outname.h5ad')
 ```
 ## Singularity
 
-Utilizamos un entorno singularity para la ejecución de MOBER, con el objetivo de contar con un entorno "portátil" en el que se tenga todo lo necesario para la ejecución de la herramienta.  
+Singularity es una herramienta que permite la creación, ejecución y manejo de contenedores.
+
+Utilizamos un entorno singularity para la ejecución de MOBER, con el objetivo de contar con un entorno "portátil" en el que se tenga todo lo necesario para la puesta en marcha de la herramienta.  
 
 A continuación se detallan los pasos a seguir para la creación del entorno.
 
 ### Prerrequisitos
 
-### Creación
+- Se recomienda utilizar Singularity en un entorno Linux, pero no es un requisito indispensable. 
+
+#### Instalación 
+- Instalación de dependencias
+```bash
+sudo apt-get update
+sudo apt-get install -y build-essential libssl-dev uuid-dev libgpgme11-dev squashfs-tools libseccomp-dev wget pkg-config git cryptsetup
+```
+- Descarga y compilado
+```bash
+VERSION= 3.9.4  # Por lo general usar la versión más reciente disponible
+wget https://github.com/sylabs/singularity/releases/download/v$VERSION/singularity-$VERSION.tar.gz
+tar -xzf singularity-$VERSION.tar.gz
+cd singularity-$VERSION
+./mconfig
+make -C ./builddir
+sudo make -C ./builddir install
+```
+- Verificación de la instalación
+```bash
+singularity --version
+```
+### Creación de un entorno 
+Una manera sencilla de trabajar dentro de Singularity, y la que utilizaremos, es la generación de una imagen tipo sandbox con la que podremos interactuar. 
+
+El uso de la opción sandbox nos permitirá seguir instalando dentro de la imagen todo lo que necesites, para evitar tener que montar la imagen desde cero cada vez.
+
+Para el montaje de esta imagen principal, crearemos un archivo de texto que define cómo construir una imagen de contenedor Singularity (llamado "recipe"). En nuestro caso, podría ser:
+```bash
+Bootstrap: docker
+From: ubuntu:20.04
+
+%labels
+    Version v1.0
+
+%help 
+    Singularity image for mober 
+
+%files
+    tu\ruta\a\mober /mnt/
+
+%post
+    apt-get update 
+    apt-get install -y python3 python3-pip
+
+    cd /mnt/mober
+    pip install -e .
+
+%runscript
+    python3 /mnt/mober/mober.py "$@"
+```
+
+Una vez creado el recipe (recipe.txt), montamos la imagen:
+```bash
+$ sudo singularity build --sandbox DIRNAME/ recipe_file.txt
+```
+
+Y entramos en ella:
+```bash
+$ sudo singularity shell --writable DIRNAME/ 
+```
+Ya podríamos empezar a trabjar con nuestra herramienta dentr de nuestro contenedor Singularity.
 
 ### Ejemplo de uso
