@@ -97,6 +97,39 @@ proj_adata.write('outname.h5ad')
 # proj_adata -> contiene los valores proyectados
 # z_adata -> contiene los embeddings de las muestras en el espacio latente
 ```
+
+### Aplicación
+
+Hemos aplicado MOBER mediante los comandos mencionados, de la siguiente manera:
+
+1. Entrenamiento 
+
+```bash 
+mober train --train_file "C:\Users\Carla\Desktop\4o\Q1\TFG\microbiome_data.h5ad" --output_dir "..\tmp_data\test"
+```
+Aquí:
+- microbiome_data.h5ad es un objeto generado a partir de otro objeto en formato phyloseq, resultado a su vez del preprocesado de las cohortes de microbioma proporcionadas como datos base.
+- La dirección del output es la definida por defecto en el modelo.
+
+En cuanto al output obtenemos como resultado, por una parte, tres ficheros (train_loss_adv, train_loss_ae y train_loss_tot) con información sobre la pérdida obtenida durante el entrenamiento (adversarial, de reconstrucción y total); y por otra parte, varios ficheros csv con características y parámetros sobre los datos input y el entrenamiento, sumados a los modelos finales entrenados para las dos componentes claves de MOBER: el codificador automático variacional condicional (batch_ae_final.model) y la red neuronal discriminadora de fuente (src_adv_final.model).
+
+2. Proyección 
+
+```bash
+mober projection 
+--model_dir C:\Users\Carla\Desktop\4o\Q1\TFG\mober\tmp_data\test\models
+--onto (1-7)
+--projection_file C:\Users\Carla\Desktop\4o\Q1\TFG\microbiome_data.h5ad
+--output_file C:\Users\Carla\Desktop\4o\Q1\TFG\output.h5ad
+--decimals 4
+```
+En este caso:
+- La dirección del modelo es la definida por defecto hacia donde se encuentran los modelos comentados en el anterior apartado.
+- onto es un valor entre 1 y 7 (es decir, una de nuestras cohortes) sobre el que las muestras serán proyectadas.
+- El fichero sobre el que haremos proyección será el utilizado para el entrenamiento, en nuestro caso microbiome_data.h5ad.
+- El output es un nuevo fichero .h5ad, que contendrá los valores proyectados, y con los que trabajaremos en próximmos pasos.
+- decimals representa al número de decimales para el fichero generado como output. Valor 4 por defecto.
+
 ## Singularity
 
 Singularity es una herramienta que permite la creación, ejecución y manejo de contenedores.
