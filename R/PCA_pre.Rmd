@@ -25,9 +25,9 @@ physeq_agl_combined <- do.call("merge_phyloseq", physeq_agl_list_filtrado)
 physeq_agl_combined
 ```
 
+Representamos la PCA 
 
 ```{r include=TRUE}
-# proceso para crear el otu del derecho
 otu_table <- otu_table(physeq_agl_combined)
 otu <- t(otu_table)
 
@@ -41,12 +41,11 @@ datos <- read_xlsx("C:/Users/Carla/Desktop/4o/Q1/TFG/def_otu2.xlsx", col_names =
 colnames(datos) <- col
 rownames(datos) <- row
 
-# metadatos
 metadata <- sample_data(physeq_agl_combined)
 metadata
 metadata$Group <- ifelse(metadata$Group == 'Control', 'Control', 'CRC')
 
-# plot 
+# Plot 
 p_input <- pca(datos, metadata = metadata, removeVar = 0.1)
 
 biplot(p_input, xlim = c(-180000,180000), ylim = c(-100000,100000))

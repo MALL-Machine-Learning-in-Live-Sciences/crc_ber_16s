@@ -12,6 +12,7 @@ library(dplyr)
 library(tidyr)
 ```
 
+Creamos el objeto phyloseq con el que crearemos la PCA a partir del output .h5ad que genera hacer proyección con MOBER 
 
 ```{r include=TRUE}
 # Especifica la ruta al directorio que contiene los archivos CSV
@@ -39,8 +40,9 @@ str(sample_combined)
 physeq_output <- phyloseq(otu_table(otu_combined_t, taxa_are_rows = FALSE), sample_data(sample_combined))
 ```
 
+Representamos PCA
+
 ```{r include=TRUE}
-# proceso para crear el otu del derecho
 otu_table_o <- otu_table(physeq_output)
 
 col<-rownames(otu_table_o)
@@ -55,12 +57,11 @@ rownames(datos_output_t) <- row
 
 View(datos_output_t)
 
-# metadatos
 metadata_output <- sample_data(physeq_output)
 metadata_output
 View(metadata_output)
 
-# plot 
+# Plot 
 p_output <- pca(HWClr(datos_output_t), metadata = metadata_output, removeVar = 0.1)
 
 biplot(p_output, xlim = c(-50, 50), ylim = c(-50, 50))

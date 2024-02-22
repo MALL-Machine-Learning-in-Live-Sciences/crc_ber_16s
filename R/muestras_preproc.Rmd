@@ -110,11 +110,6 @@ for (i in seq_along(physeq_list_feces)) {
   physeq_agl_list[[i]] <- physeq_aglomerado
 }
 
-View(otu_table(physeq_agl_list[[1]]))
-View(sample_data(physeq_agl_list[[1]]))
-View(tax_table(physeq_agl_list[[1]]))
-View(tax_table(physeq_list_feces[[1]]))
-
 physeq_agl_list
 ```
 Tenemos (ej 1) 428 taxas de 129 muestras, 21 variables y 7 ranks taxonómicos
@@ -168,11 +163,6 @@ for (i in seq_along(physeq_agl_list)) {
   physeq_agl_list_sin_NA[[i]] <- physeq_agl_sin_NA
 } 
 
-
-View(tax_table(physeq_list_feces[[1]]))
-View(tax_table(physeq_agl_list[[1]]))
-View(tax_table(physeq_agl_list_sin_NA[[1]]))
-
 # Este objeto es igual a physeq_alg_list (usamos el que sea indistintamente)
 physeq_agl_list_sin_NA 
 ```
@@ -212,9 +202,6 @@ physeq_agl_list_filtrado <- lapply(physeq_agl_list, function(x) {
 generos_comunes
 physeq_agl_list_filtrado
 
-View(otu_table(physeq_agl_list_filtrado[[4]]))
-View(sample_data(physeq_agl_list_filtrado[[1]]))
-
 # Obtener la columna "Genus" de la tax_table del tercer objeto physeq_agl_list_filtrado
 generos_en_tax_table <- tolower(as.character(tax_table(physeq_agl_list_filtrado[[2]])[, "Genus"]))
 
@@ -245,17 +232,10 @@ tax_table_sin_repetidos <- tax_table(physeq_agl_list_filtrado[[2]])[indices_unic
 # Aplicar los cambios a physeq_agl_list_filtrado[[6]]
 tax_table(physeq_agl_list_filtrado[[2]]) <- tax_table_sin_repetidos
 
-View(tax_table(physeq_agl_list_filtrado[[1]]))
-View(sample_data(physeq_agl_list_filtrado[[5]]))
-View(otu_table(physeq_agl_list_filtrado[[1]]))
-
-
 ```
 Tenemos (ej 1) 176 taxas de 129 muestras, 21 variables y 7 ranks taxonómicos
 
 Hay 175 géneros comunes entre las distintas cohortes
-
-(PREGUNTAR POR QUÉ EN ALGUNOS SALE 175, 176, 177)
 
 Generación archivos csv para la creación de .h5ad
 
