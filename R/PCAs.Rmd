@@ -1,0 +1,42 @@
+---
+title: "PCA"
+author: "Carla"
+date: "2024-02-02"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(phyloseq)
+library(vegan)
+```
+
+Convertimos la lista de objetos phyloseq en un sólo objeto 
+
+```{r include=TRUE}
+physeq_agl_combined <- do.call("merge_phyloseq", physeq_agl_list_filtrado)
+physeq_agl_combined
+```
+Realizamos la PCA
+
+```{r include=TRUE}
+# Realizar la PCA
+# Extraer la matriz de OTU (o algún subconjunto relevante de tus datos)
+matriz_otu <- otu_table(physeq_agl_combined)
+
+# Realizar PCA
+pca_result <- prcomp(t(matriz_otu), scale. = TRUE)
+
+# Plotear la PCA
+biplot(pca_result)
+
+```
+El objetivo con la realización del PCA es visualizar la variabilidad de los datos, a la vez que resumimos la información contenida en un conjunto de variables en un conjunto más pequeño de variables no correlacionadas.
+
+Cada punto en el gráfico representa una muestra u observación. La distancia entre estos puntos en el gráfico refleja la similitud o disimilitud entre las muestras en función de la variabilidad en los datos. 
+
+En este caso estamos trabajando con 2 componentes principales. El primer eje (PC1) captura la mayor varianza en los datos, el segundo eje (PC2) la segunda mayor, y así sucesivamente.
+
+
+
