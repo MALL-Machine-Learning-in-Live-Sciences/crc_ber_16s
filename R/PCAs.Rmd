@@ -7,9 +7,15 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+if (!require("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+
+BiocManager::install("PCAtools")
 
 library(phyloseq)
 library(vegan)
+library(PCAtools)
+library(openxlsx)
 ```
 
 Convertimos la lista de objetos phyloseq en un sólo objeto 
@@ -18,25 +24,31 @@ Convertimos la lista de objetos phyloseq en un sólo objeto
 physeq_agl_combined <- do.call("merge_phyloseq", physeq_agl_list_filtrado)
 physeq_agl_combined
 ```
-Realizamos la PCA
+
 
 ```{r include=TRUE}
-# Realizar la PCA
-# Extraer la matriz de OTU (o algún subconjunto relevante de tus datos)
-matriz_otu <- otu_table(physeq_agl_combined)
+# proceso para crear el otu del derecho
+otu_table <- otu_table(physeq_agl_combined)
+otu <- t(otu_table)
 
-# Realizar PCA
-pca_result <- prcomp(t(matriz_otu), scale. = TRUE)
+write.xlsx(otu_table, file = "C:/Users/Carla/Desktop/4o/Q1/TFG/def_otu2.xlsx")
 
-# Plotear la PCA
-biplot(pca_result)
+col<-rownames(otu)
+row<-colnames(otu)
+
+datos <- read_xlsx("C:/Users/Carla/Desktop/4o/Q1/TFG/def_otu2.xlsx", col_names = FALSE)
+
+colnames(datos) <- col
+rownames(datos) <- row
+
+# metadatos
+metadata <- sample_data(physeq_agl_combined)
+metadata
+metadata$Group <- ifelse(metadata$Group == 'Control', 'Control', 'CRC')
+
+# plot 
+p_input <- pca(datos, metadata = metadata, removeVar = 0.1)
+
+biplot(p_input, xlim = c(-180000,180000), ylim = c(-100000,100000))
 
 ```
-El objetivo con la realización del PCA es visualizar la variabilidad de los datos, a la vez que resumimos la información contenida en un conjunto de variables en un conjunto más pequeño de variables no correlacionadas.
-
-Cada punto en el gráfico representa una muestra u observación. La distancia entre estos puntos en el gráfico refleja la similitud o disimilitud entre las muestras en función de la variabilidad en los datos. 
-
-En este caso estamos trabajando con 2 componentes principales. El primer eje (PC1) captura la mayor varianza en los datos, el segundo eje (PC2) la segunda mayor, y así sucesivamente.
-
-
-

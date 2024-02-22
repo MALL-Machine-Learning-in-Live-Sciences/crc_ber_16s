@@ -245,6 +245,10 @@ tax_table_sin_repetidos <- tax_table(physeq_agl_list_filtrado[[2]])[indices_unic
 # Aplicar los cambios a physeq_agl_list_filtrado[[6]]
 tax_table(physeq_agl_list_filtrado[[2]]) <- tax_table_sin_repetidos
 
+View(tax_table(physeq_agl_list_filtrado[[1]]))
+View(sample_data(physeq_agl_list_filtrado[[5]]))
+View(otu_table(physeq_agl_list_filtrado[[1]]))
+
 
 ```
 Tenemos (ej 1) 176 taxas de 129 muestras, 21 variables y 7 ranks taxonómicos
