@@ -45,9 +45,22 @@ metadata <- sample_data(physeq_agl_combined)
 metadata
 metadata$Group <- ifelse(metadata$Group == 'Control', 'Control', 'CRC')
 
-# Plot 
+# Plot PCAtools
 p_input <- pca(datos, metadata = metadata, removeVar = 0.1)
-
 biplot(p_input, xlim = c(-180000,180000), ylim = c(-100000,100000))
 
+# Plot mixOmics
+pca <- mixOmics::pca(otu)
+plotIndiv(pca.clr, xlim = c(-180000,180000), ylim = c(-100000,100000))
+```
+
+Transformación CLR
+```{r include=TRUE}
+# CLR
+datos_pseudo <- otu + 1
+datos.clr <- logratio.transfo(as.matrix(datos_pseudo), 
+                             logratio = 'CLR', offset = 0) 
+
+pca.clr <- mixOmics::pca(datos.clr)
+plotIndiv(pca.clr, xlim = c(-40,40), ylim = c(-50,50))
 ```

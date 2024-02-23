@@ -117,10 +117,10 @@ En cuanto al output obtenemos como resultado, por una parte, tres ficheros (trai
 
 ```bash
 mober projection 
---model_dir C:\Users\Carla\Desktop\4o\Q1\TFG\mober\tmp_data\test\models
+--model_dir "C:\Users\Carla\Desktop\4o\Q1\TFG\mober\tmp_data\test\models"
 --onto (1-7)
---projection_file C:\Users\Carla\Desktop\4o\Q1\TFG\microbiome_data.h5ad
---output_file C:\Users\Carla\Desktop\4o\Q1\TFG\output.h5ad
+--projection_file "C:\Users\Carla\Desktop\4o\Q1\TFG\microbiome_data.h5ad"
+--output_file "C:\Users\Carla\Desktop\4o\Q1\TFG\output.h5ad"
 --decimals 4
 ```
 En este caso:
