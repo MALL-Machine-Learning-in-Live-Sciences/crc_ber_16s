@@ -91,11 +91,12 @@ cohort_numbers_with_feces
 physeq_list_feces <- filtered_physeq_list[cohort_numbers_with_feces]
 physeq_list_feces
 ```
+
 Una vez hecho esto se eliminan las cohortes 2, 6 y 8 al no contener muestras de heces. De aquí en adelante trabajaremos con las 7 cohortes restantes.
 
 Tenemos (ej 1) 7526 taxas de 129 muestras, 21 variables y 7 ranks taxonómicos
 
-2. Aglomerar por género (agrupación o sumarización de datos a nivel de género microbiológico)
+2. Aglomerar por el campo Genus (agrupación o sumarización de datos a nivel de género microbiológico)
 
 En las tablas de taxonomía (cómo se dijo antes) tenemos diferentes clasificaciones en cada OTU. Vamos a realizar una aglomeración por género. 
 
@@ -170,6 +171,21 @@ Tenemos (ej 1) 428 taxas de 129 muestras, 21 variables y 7 ranks taxonómicos
 
 4. Identificar y filtrar por géneros comunes entre todos las cohortes
 
+Creamos un nuevo campo llamado fam_gen que sea una combinación de los campos Family y Genus, separados por '_', con el objetivo de aglomerar posteriormente por este campo, sin encontrarnos discrepancias debido a los géneros que tienen el mismo Genus pero pertenecen a distinta familia.
+
+```{r include=TRUE}
+for (i in seq_along(physeq_agl_list)) {
+  family <- tax_table(physeq_agl_list[[i]])[, "Family"]
+  genus <- tax_table(physeq_agl_list[[i]])[, "Genus"]
+  
+  # Crear el campo fam_gen concatenando family y genus con '_'
+  fam_gen <- paste(family, genus, sep = "_")
+  
+  # Asignar el nuevo campo fam_gen a la tabla de taxonomía
+  tax_table(physeq_agl_list[[i]]) <- cbind(tax_table(physeq_agl_list[[i]]), fam_gen)
+}
+```
+
 Ahora vamos a filtrar y quedarnos sólamente con los géneros comunes entre todas las cohortes
 
 Esto se hace también para poder encontrar mejor las relaciones reales entre muestras 
@@ -179,7 +195,7 @@ Esto se hace también para poder encontrar mejor las relaciones reales entre mue
 # Paso 1: Obtener los géneros comunes entre todas las cohortes
 generos_comunes <- Reduce(intersect, lapply(physeq_agl_list, function(x) {
   # Obtener la columna "Genus" de la tabla de taxonomía
-  generos_cohorte <- as.character(tax_table(x)[, "Genus"])
+  generos_cohorte <- as.character(tax_table(x)[, "fam_gen"])
   # Filtrar los géneros no identificados (NA)
   generos_cohorte <- generos_cohorte[!is.na(generos_cohorte)]
   return(generos_cohorte)
@@ -191,7 +207,7 @@ physeq_agl_list_filtrado <- lapply(physeq_agl_list, function(x) {
   tax_table_agl <- tax_table(x)
   
   # Filtrar la tabla de taxonomía para incluir solo los géneros comunes
-  tax_table_filtrada <- tax_table_agl[tax_table_agl[, "Genus"] %in% generos_comunes, ]
+  tax_table_filtrada <- tax_table_agl[tax_table_agl[, "fam_gen"] %in% generos_comunes, ]
   
   # Aplicar los cambios a x
   tax_table(x) <- tax_table_filtrada
@@ -201,39 +217,7 @@ physeq_agl_list_filtrado <- lapply(physeq_agl_list, function(x) {
 
 generos_comunes
 physeq_agl_list_filtrado
-
-# Obtener la columna "Genus" de la tax_table del tercer objeto physeq_agl_list_filtrado
-generos_en_tax_table <- tolower(as.character(tax_table(physeq_agl_list_filtrado[[2]])[, "Genus"]))
-
-# Verificar si hay géneros repetidos
-if (any(duplicated(generos_en_tax_table))) {
-  cat("Hay géneros repetidos en la columna 'Genus' de la tax_table.\n")
-  
-  # Obtener los índices de los géneros repetidos
-  indices_repetidos <- which(duplicated(generos_en_tax_table))
-  
-  # Obtener los nombres de los géneros repetidos
-  generos_repetidos <- generos_en_tax_table[indices_repetidos]
-  
-  # Imprimir los nombres de los géneros repetidos
-  cat("Nombres de los géneros repetidos:\n")
-  print(generos_repetidos)
-} else {
-  cat("No hay géneros repetidos en la columna 'Genus' de la tax_table.\n")
-}
-
-
-# Obtener el índice de los géneros únicos
-indices_unicos <- !duplicated(generos_en_tax_table)
-
-# Filtrar la tax_table para incluir solo los géneros únicos
-tax_table_sin_repetidos <- tax_table(physeq_agl_list_filtrado[[2]])[indices_unicos, ]
-
-# Aplicar los cambios a physeq_agl_list_filtrado[[6]]
-tax_table(physeq_agl_list_filtrado[[2]]) <- tax_table_sin_repetidos
-
 ```
-Tenemos (ej 1) 176 taxas de 129 muestras, 21 variables y 7 ranks taxonómicos
 
 Hay 175 géneros comunes entre las distintas cohortes
 
