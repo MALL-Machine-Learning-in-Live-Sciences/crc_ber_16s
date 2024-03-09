@@ -10,12 +10,16 @@ knitr::opts_chunk$set(echo = TRUE)
 if (!require("BiocManager", quietly = TRUE))
     install.packages("BiocManager")
 
-BiocManager::install("PCAtools")
+BiocManager::install(version = "3.18")
+
+BiocManager::install("PLSDAbatch")
 
 library(phyloseq)
 library(vegan)
 library(PCAtools)
 library(openxlsx)
+library(PLSDAbatch)
+library(mixOmics)
 ```
 
 Convertimos la lista de objetos phyloseq en un sólo objeto 
@@ -25,42 +29,47 @@ physeq_agl_combined <- do.call("merge_phyloseq", physeq_agl_list_filtrado)
 physeq_agl_combined
 ```
 
-Representamos la PCA 
+Aplicamos CLR a nuestros datos para representar la PCA 
 
 ```{r include=TRUE}
 otu_table <- otu_table(physeq_agl_combined)
 otu <- t(otu_table)
-
-write.xlsx(otu_table, file = "C:/Users/Carla/Desktop/4o/Q1/TFG/def_otu2.xlsx")
-
-col<-rownames(otu)
-row<-colnames(otu)
-
-datos <- read_xlsx("C:/Users/Carla/Desktop/4o/Q1/TFG/def_otu2.xlsx", col_names = FALSE)
-
-colnames(datos) <- col
-rownames(datos) <- row
+otu <- as.matrix(otu)
 
 metadata <- sample_data(physeq_agl_combined)
-metadata
-metadata$Group <- ifelse(metadata$Group == 'Control', 'Control', 'CRC')
+meta <- as.matrix(metadata)
+meta <- as.data.frame(meta)
 
-# Plot PCAtools
-p_input <- pca(datos, metadata = metadata, removeVar = 0.1)
-biplot(p_input, xlim = c(-180000,180000), ylim = c(-100000,100000))
+cols <- c("project", "status")
+meta[,cols] <- lapply(meta[,cols], as.factor)
 
-# Plot mixOmics
-pca <- mixOmics::pca(otu)
-plotIndiv(pca.clr, xlim = c(-180000,180000), ylim = c(-100000,100000))
-```
-
-Transformación CLR
-```{r include=TRUE}
 # CLR
 datos_pseudo <- otu + 1
-datos.clr <- logratio.transfo(as.matrix(datos_pseudo), 
-                             logratio = 'CLR', offset = 0) 
+otu_clr <- logratio.transfo(as.matrix(datos_pseudo), logratio = 'CLR') 
 
-pca.clr <- mixOmics::pca(datos.clr)
-plotIndiv(pca.clr, xlim = c(-40,40), ylim = c(-50,50))
+pca_before <- pca(X = otu_clr, ncomp = 2)
+
+plot_pca_before <- PLSDAbatch::Scatter_Density(object = pca_before,
+                                               batch = meta[,"project"],
+                                               trt = meta[,"status"],
+                                               batch.legend.title = 'Project',
+                                               trt.legend.title = 'Status',
+                                               title = 'Without correction',
+                                               xlim = c(-25, 25), 
+                                               ylim = c(-50, 10))
+```
+
+
+```{r include=TRUE}
+otu_table <- t(otu_clr)
+sample_data <- sample_data(physeq_agl_combined)
+
+# Especificar la carpeta donde se guardarán los archivos CSV
+save_folder <- "C:/Users/Carla/Desktop/4o/Q1/TFG/samples"
+
+# Guardar otu_table en un archivo CSV
+write.csv(otu_table, file.path(save_folder, "otu_table_clr.csv"), row.names = TRUE)
+
+# Guardar sample_data en un archivo CSV
+write.csv(data.frame(sample_data), file.path(save_folder, "sample_data_clr.csv"), row.names = TRUE)
 ```

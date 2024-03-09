@@ -18,52 +18,38 @@ Creamos el objeto phyloseq con el que crearemos la PCA a partir del output .h5ad
 # Especifica la ruta al directorio que contiene los archivos CSV
 csv_directory <- "C:/Users/Carla/Desktop/4o/Q1/TFG/samples/output/"
 
-# Leer archivos CSV de otu_table y sample_data
-otu_files <- list.files(path = csv_directory, pattern = "otu_table_.*\\.csv", full.names = TRUE)
-sample_files <- list.files(path = csv_directory, pattern = "sample_data_.*\\.csv", full.names = TRUE)
+otu_file <- list.files(path = csv_directory, pattern = "otu_table.csv", full.names = TRUE)
+sample_file <- list.files(path = csv_directory, pattern = "sample_data.csv", full.names = TRUE)
 
-# Importar los datos de los archivos CSV
-otu_table <- lapply(otu_files, read.csv, row.names = 1)
-sample_data <- lapply(sample_files, read.csv, row.names = 1)
+otu <- read.csv(otu_file, row.names = 1)
+sample_data <- read.csv(sample_file, row.names = 1)
 
-# Combina las tablas de OTU y datos de muestra
-otu_combined <- do.call(cbind, otu_table)
-sample_combined <- bind_rows(sample_data)
+otu_table <- otu_table(otu, taxa_are_rows = FALSE)
+sample_data <- sample_data(sample_data)
 
-otu_combined_t<- t(otu_combined)
-
-# Verifica las dimensiones y estructuras de las tablas
-str(otu_combined_t)
-str(sample_combined)
-
-# Crear el objeto phyloseq
-physeq_output <- phyloseq(otu_table(otu_combined_t, taxa_are_rows = FALSE), sample_data(sample_combined))
+# Crear objeto phyloseq
+physeq_output <- phyloseq(otu_table, sample_data)
+physeq_output
 ```
 
 Representamos PCA
 
 ```{r include=TRUE}
 otu_table_o <- otu_table(physeq_output)
-
-col<-rownames(otu_table_o)
-row<-colnames(otu_table_o)
-
-write.xlsx(otu_table_o, file = "C:/Users/Carla/Desktop/4o/Q1/TFG/output2.xlsx")
-datos_output <- read_xlsx("C:/Users/Carla/Desktop/4o/Q1/TFG/output2.xlsx", col_names = FALSE)
-datos_output_t <- t(datos_output)
-
-colnames(datos_output_t) <- col
-rownames(datos_output_t) <- row
-
-View(datos_output_t)
+otu_post <- as.matrix(otu_table_o)
 
 metadata_output <- sample_data(physeq_output)
-metadata_output
-View(metadata_output)
+meta_post <- as.matrix(metadata_output)
+meta_post <- as.data.frame(meta_post)
 
-# Plot 
-p_output <- pca(HWClr(datos_output_t), metadata = metadata_output, removeVar = 0.1)
-
-biplot(p_output, xlim = c(-50, 50), ylim = c(-50, 50))
+pca_post <- pca(X = otu_post, ncomp = 2)
+plot_pca_post <- PLSDAbatch::Scatter_Density(object = pca_post,
+                                               batch = meta_post[,"project"],
+                                               trt = meta_post[,"status"],
+                                               batch.legend.title = 'Project',
+                                               trt.legend.title = 'Status',
+                                               title = 'With correction',
+                                               xlim = c(-5000, 1000), 
+                                               ylim = c(-2500, 2500))
 ```
 
