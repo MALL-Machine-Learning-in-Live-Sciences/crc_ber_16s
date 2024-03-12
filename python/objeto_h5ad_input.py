@@ -9,23 +9,23 @@ import pandas as pd
 from anndata import AnnData, concat
 
 # Lista de rutas a las muestras
-sample_data_files = ["C:/Users/Carla/Desktop/4o/Q1/TFG/samples/sample_data_1.csv", 
-                      "C:/Users/Carla/Desktop/4o/Q1/TFG/samples/sample_data_2.csv",
-                      "C:/Users/Carla/Desktop/4o/Q1/TFG/samples/sample_data_3.csv",
-                      "C:/Users/Carla/Desktop/4o/Q1/TFG/samples/sample_data_4.csv",
-                      "C:/Users/Carla/Desktop/4o/Q1/TFG/samples/sample_data_5.csv",
-                      "C:/Users/Carla/Desktop/4o/Q1/TFG/samples/sample_data_6.csv",
-                      "C:/Users/Carla/Desktop/4o/Q1/TFG/samples/sample_data_7.csv"]
-otu_table_files = ["C:/Users/Carla/Desktop/4o/Q1/TFG/samples/otu_table_1.csv",
-                    "C:/Users/Carla/Desktop/4o/Q1/TFG/samples/otu_table_2.csv",
-                    "C:/Users/Carla/Desktop/4o/Q1/TFG/samples/otu_table_3.csv",
-                    "C:/Users/Carla/Desktop/4o/Q1/TFG/samples/otu_table_4.csv",
-                    "C:/Users/Carla/Desktop/4o/Q1/TFG/samples/otu_table_5.csv",
-                    "C:/Users/Carla/Desktop/4o/Q1/TFG/samples/otu_table_6.csv",
-                    "C:/Users/Carla/Desktop/4o/Q1/TFG/samples/otu_table_7.csv"]
+# sample_data_files = ["C:/Users/Carla/Desktop/4o/Q1/TFG/samples/sample_data_1.csv", 
+#                       "C:/Users/Carla/Desktop/4o/Q1/TFG/samples/sample_data_2.csv",
+#                       "C:/Users/Carla/Desktop/4o/Q1/TFG/samples/sample_data_3.csv",
+#                       "C:/Users/Carla/Desktop/4o/Q1/TFG/samples/sample_data_4.csv",
+#                       "C:/Users/Carla/Desktop/4o/Q1/TFG/samples/sample_data_5.csv",
+#                       "C:/Users/Carla/Desktop/4o/Q1/TFG/samples/sample_data_6.csv",
+#                       "C:/Users/Carla/Desktop/4o/Q1/TFG/samples/sample_data_7.csv"]
+# otu_table_files = ["C:/Users/Carla/Desktop/4o/Q1/TFG/samples/otu_table_1.csv",
+#                     "C:/Users/Carla/Desktop/4o/Q1/TFG/samples/otu_table_2.csv",
+#                     "C:/Users/Carla/Desktop/4o/Q1/TFG/samples/otu_table_3.csv",
+#                     "C:/Users/Carla/Desktop/4o/Q1/TFG/samples/otu_table_4.csv",
+#                     "C:/Users/Carla/Desktop/4o/Q1/TFG/samples/otu_table_5.csv",
+#                     "C:/Users/Carla/Desktop/4o/Q1/TFG/samples/otu_table_6.csv",
+#                     "C:/Users/Carla/Desktop/4o/Q1/TFG/samples/otu_table_7.csv"]
 
-# sample_data_files_clr = ["C:/Users/Carla/Desktop/4o/Q1/TFG/samples/sample_data_clr.csv"]
-# otu_table_files_clr = ["C:/Users/Carla/Desktop/4o/Q1/TFG/samples/otu_table_clr.csv"]
+sample_data_files = ["C:/Users/Carla/Desktop/4o/Q1/TFG/samples/sample_data_clr.csv"]
+otu_table_files = ["C:/Users/Carla/Desktop/4o/Q1/TFG/samples/otu_table_clr.csv"]
 
 
 # Lista para almacenar objetos AnnData
@@ -52,4 +52,4 @@ for otu_file, sample_file in zip(otu_table_files, sample_data_files):
 
 # Concatenar los objetos AnnData en la lista y crear el objeto
 ad = concat(adata_list)
-ad.write_h5ad("microbiome_data.h5ad")
+ad.write_h5ad("microbiome_data_clr.h5ad")

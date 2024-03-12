@@ -43,13 +43,26 @@ meta <- as.data.frame(meta)
 cols <- c("project", "status")
 meta[,cols] <- lapply(meta[,cols], as.factor)
 
+pca_before <- pca(X = otu, ncomp = 2)
+
+plot_pca_before <- PLSDAbatch::Scatter_Density(object = pca_before,
+                                               batch = meta[,"project"],
+                                               trt = meta[,"status"],
+                                               batch.legend.title = 'Project',
+                                               trt.legend.title = 'Status',
+                                               title = 'Without correction',
+                                               xlim = c(0, 75000), 
+                                               ylim = c(-50000, 50000))
+```
+
+```{r include=TRUE}
 # CLR
 datos_pseudo <- otu + 1
 otu_clr <- logratio.transfo(as.matrix(datos_pseudo), logratio = 'CLR') 
 
-pca_before <- pca(X = otu_clr, ncomp = 2)
+pca_before_clr <- pca(X = otu_clr, ncomp = 2)
 
-plot_pca_before <- PLSDAbatch::Scatter_Density(object = pca_before,
+plot_pca_before_clr <- PLSDAbatch::Scatter_Density(object = pca_before_clr,
                                                batch = meta[,"project"],
                                                trt = meta[,"status"],
                                                batch.legend.title = 'Project',

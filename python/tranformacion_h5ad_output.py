@@ -13,7 +13,7 @@ import anndata
 output_directory = "C:/Users/Carla/Desktop/4o/Q1/TFG/samples/output"
 
 # Cargar el archivo .h5ad
-ad = anndata.read_h5ad("C:/Users/Carla/Desktop/4o/Q1/TFG/output.h5ad")
+ad = anndata.read_h5ad("C:/Users/Carla/Desktop/4o/Q1/TFG/crc_ber_16s/python/output.h5ad")
 # ad_clr = anndata.read_h5ad("C:/Users/Carla/Desktop/4o/Q1/TFG/output_clr.h5ad")
 
 otu_table_df = pd.DataFrame(ad.X, index=ad.obs.index, columns=ad.var.index)
