@@ -13,14 +13,14 @@ import anndata
 output_directory = "C:/Users/Carla/Desktop/4o/Q1/TFG/samples/output"
 
 # Cargar el archivo .h5ad
-ad = anndata.read_h5ad("C:/Users/Carla/Desktop/4o/Q1/TFG/crc_ber_16s/python/output.h5ad")
+ad = anndata.read_h5ad("C:/Users/Carla/Desktop/4o/Q1/TFG/crc_ber_16s/python/output_abr.h5ad")
 # ad_clr = anndata.read_h5ad("C:/Users/Carla/Desktop/4o/Q1/TFG/output_clr.h5ad")
 
 otu_table_df = pd.DataFrame(ad.X, index=ad.obs.index, columns=ad.var.index)
 sample_data_df = ad.obs
 
-otu_table_df.to_csv(os.path.join(output_directory, "otu_table.csv"))
-sample_data_df.to_csv(os.path.join(output_directory, "sample_data.csv"))
+otu_table_df.to_csv(os.path.join(output_directory, "otu_table_abr.csv"))
+sample_data_df.to_csv(os.path.join(output_directory, "sample_data_abr.csv"))
 
 
 # # Iterar sobre las cohortes en el objeto AnnData

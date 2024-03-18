@@ -24,8 +24,8 @@ from anndata import AnnData, concat
 #                     "C:/Users/Carla/Desktop/4o/Q1/TFG/samples/otu_table_6.csv",
 #                     "C:/Users/Carla/Desktop/4o/Q1/TFG/samples/otu_table_7.csv"]
 
-sample_data_files = ["C:/Users/Carla/Desktop/4o/Q1/TFG/samples/sample_data_clr.csv"]
-otu_table_files = ["C:/Users/Carla/Desktop/4o/Q1/TFG/samples/otu_table_clr.csv"]
+sample_data_files = ["C:/Users/Carla/Desktop/4o/Q1/TFG/samples/sample_data_abr.csv"]
+otu_table_files = ["C:/Users/Carla/Desktop/4o/Q1/TFG/samples/otu_table_abr.csv"]
 
 
 # Lista para almacenar objetos AnnData
@@ -52,4 +52,4 @@ for otu_file, sample_file in zip(otu_table_files, sample_data_files):
 
 # Concatenar los objetos AnnData en la lista y crear el objeto
 ad = concat(adata_list)
-ad.write_h5ad("microbiome_data_clr.h5ad")
+ad.write_h5ad("microbiome_data_abr.h5ad")

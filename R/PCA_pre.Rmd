@@ -10,16 +10,14 @@ knitr::opts_chunk$set(echo = TRUE)
 if (!require("BiocManager", quietly = TRUE))
     install.packages("BiocManager")
 
-BiocManager::install(version = "3.18")
-
-BiocManager::install("PLSDAbatch")
-
 library(phyloseq)
 library(vegan)
 library(PCAtools)
-library(openxlsx)
-library(PLSDAbatch)
-library(mixOmics)
+
+library(PLSDAbatch) # gráficos PCA 
+library(mixOmics) # normalización CLR 
+library(compositions) # normalización ALR
+library(ampvis2) # normalización abundancias relativas 
 ```
 
 Convertimos la lista de objetos phyloseq en un sólo objeto 
@@ -29,7 +27,7 @@ physeq_agl_combined <- do.call("merge_phyloseq", physeq_agl_list_filtrado)
 physeq_agl_combined
 ```
 
-Aplicamos CLR a nuestros datos para representar la PCA 
+PCA antes de normalizar 
 
 ```{r include=TRUE}
 otu_table <- otu_table(physeq_agl_combined)
@@ -54,6 +52,7 @@ plot_pca_before <- PLSDAbatch::Scatter_Density(object = pca_before,
                                                xlim = c(0, 75000), 
                                                ylim = c(-50000, 50000))
 ```
+Normalización CLR 
 
 ```{r include=TRUE}
 # CLR
@@ -71,18 +70,49 @@ plot_pca_before_clr <- PLSDAbatch::Scatter_Density(object = pca_before_clr,
                                                xlim = c(-25, 25), 
                                                ylim = c(-50, 10))
 ```
-
+Normalización ALR 
 
 ```{r include=TRUE}
-otu_table <- t(otu_clr)
+# ALR 
+alr_datos <- alr(datos_pseudo)
+pca_before_alr <- pca(X = alr_datos, ncomp = 2)
+
+plot_pca_before_alr <- PLSDAbatch::Scatter_Density(object = pca_before_alr,
+                                               batch = meta[,"project"],
+                                               trt = meta[,"status"],
+                                               batch.legend.title = 'Project',
+                                               trt.legend.title = 'Status',
+                                               title = 'Without correction',
+                                               xlim = c(-25, 25), 
+                                               ylim = c(-50, 10))
+```
+Normalización por abundancias relativas 
+```{r include=TRUE}
+# Abundancia relativa 
+otu_abr <- transform(otu, "compositional")
+
+pca_before_abr <- pca(X = otu_abr, ncomp = 2)
+
+plot_pca_before_abr <- PLSDAbatch::Scatter_Density(object = pca_before_abr,
+                                               batch = meta[,"project"],
+                                               trt = meta[,"status"],
+                                               batch.legend.title = 'Project',
+                                               trt.legend.title = 'Status',
+                                               title = 'Without correction',
+                                               xlim = c(-0.3, 0.3), 
+                                               ylim = c(-0.3, 0.3))
+```
+
+```{r include=TRUE}
+otu_table <- t(otu_abr)
 sample_data <- sample_data(physeq_agl_combined)
 
 # Especificar la carpeta donde se guardarán los archivos CSV
 save_folder <- "C:/Users/Carla/Desktop/4o/Q1/TFG/samples"
 
 # Guardar otu_table en un archivo CSV
-write.csv(otu_table, file.path(save_folder, "otu_table_clr.csv"), row.names = TRUE)
+write.csv(otu_table, file.path(save_folder, "otu_table_abr.csv"), row.names = TRUE)
 
 # Guardar sample_data en un archivo CSV
-write.csv(data.frame(sample_data), file.path(save_folder, "sample_data_clr.csv"), row.names = TRUE)
+write.csv(data.frame(sample_data), file.path(save_folder, "sample_data_abr.csv"), row.names = TRUE)
 ```

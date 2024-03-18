@@ -18,8 +18,8 @@ Creamos el objeto phyloseq con el que crearemos la PCA a partir del output .h5ad
 # Especifica la ruta al directorio que contiene los archivos CSV
 csv_directory <- "C:/Users/Carla/Desktop/4o/Q1/TFG/samples/output/"
 
-otu_file <- list.files(path = csv_directory, pattern = "otu_table.csv", full.names = TRUE)
-sample_file <- list.files(path = csv_directory, pattern = "sample_data.csv", full.names = TRUE)
+otu_file <- list.files(path = csv_directory, pattern = "otu_table_abr.csv", full.names = TRUE)
+sample_file <- list.files(path = csv_directory, pattern = "sample_data_abr.csv", full.names = TRUE)
 
 otu <- read.csv(otu_file, row.names = 1)
 sample_data <- read.csv(sample_file, row.names = 1)
@@ -28,11 +28,13 @@ otu_table <- otu_table(otu, taxa_are_rows = FALSE)
 sample_data <- sample_data(sample_data)
 
 # Crear objeto phyloseq
-physeq_output <- phyloseq(otu_table, sample_data)
-physeq_output
+physeq_output_abr <- phyloseq(otu_table, sample_data)
+physeq_output_abr
 ```
 
 Representamos PCA
+
+Sin normalización
 
 ```{r include=TRUE}
 otu_table_o <- otu_table(physeq_output)
@@ -52,4 +54,77 @@ plot_pca_post <- PLSDAbatch::Scatter_Density(object = pca_post,
                                                xlim = c(-2000, 1000), 
                                                ylim = c(-2500, 2500))
 ```
+CLR 
 
+```{r include=TRUE}
+otu_table_o <- otu_table(physeq_output_clr)
+otu_post_clr <- otu_table(physeq_output_clr)
+otu_post_clr <- as.matrix(otu_post_clr)
+
+metadata_output_clr <- sample_data(physeq_output_clr)
+meta_out_clr <- as.matrix(metadata_output_clr)
+meta_out_clr <- as.data.frame(meta_out_clr)
+
+cols <- c("project", "status")
+meta_out_clr[,cols] <- lapply(meta_out_clr[,cols], as.factor)
+
+pca_post_clr <- pca(X = otu_post_clr, ncomp = 2)
+plot_pca_post_clr <- PLSDAbatch::Scatter_Density(object = pca_post_clr,
+                                               batch = meta_out_clr[,"project"],
+                                               trt = meta_out_clr[,"status"],
+                                               batch.legend.title = 'Project',
+                                               trt.legend.title = 'Status',
+                                               title = 'With correction',
+                                               xlim = c(-20, 20), 
+                                               ylim = c(-20, 20))
+```
+
+ALR 
+
+```{r include=TRUE}
+otu_table_o <- otu_table(physeq_output_alr)
+otu_post_alr <- otu_table(physeq_output_alr)
+otu_post_alr <- as.matrix(otu_post_alr)
+
+metadata_output_alr <- sample_data(physeq_output_alr)
+meta_out_alr <- as.matrix(metadata_output_alr)
+meta_out_alr <- as.data.frame(meta_out_alr)
+
+cols <- c("project", "status")
+meta_out_alr[,cols] <- lapply(meta_out_alr[,cols], as.factor)
+
+pca_post_alr <- pca(X = otu_post_alr, ncomp = 2)
+plot_pca_post_clr <- PLSDAbatch::Scatter_Density(object = pca_post_alr,
+                                               batch = meta_out_alr[,"project"],
+                                               trt = meta_out_alr[,"status"],
+                                               batch.legend.title = 'Project',
+                                               trt.legend.title = 'Status',
+                                               title = 'With correction',
+                                               xlim = c(-2.5,2.5), 
+                                               ylim = c(-10, 5))
+```
+
+Abundancias relativas 
+
+```{r include=TRUE}
+otu_table_o <- otu_table(physeq_output_abr)
+otu_post_abr <- otu_table(physeq_output_abr)
+otu_post_abr <- as.matrix(otu_post_abr)
+
+metadata_output_abr <- sample_data(physeq_output_abr)
+meta_out_abr <- as.matrix(metadata_output_abr)
+meta_out_abr <- as.data.frame(meta_out_abr)
+
+cols <- c("project", "status")
+meta_out_abr[,cols] <- lapply(meta_out_abr[,cols], as.factor)
+
+pca_post_abr <- pca(X = otu_post_abr, ncomp = 2)
+plot_pca_post_abr <- PLSDAbatch::Scatter_Density(object = pca_post_abr,
+                                               batch = meta_out_abr[,"project"],
+                                               trt = meta_out_abr[,"status"],
+                                               batch.legend.title = 'Project',
+                                               trt.legend.title = 'Status',
+                                               title = 'With correction',
+                                               xlim = c(-0.2, 0.2), 
+                                               ylim = c(-0.2, 0.2))
+```
