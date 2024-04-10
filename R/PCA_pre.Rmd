@@ -58,6 +58,7 @@ Normalización CLR
 # CLR
 datos_pseudo <- otu + 1
 otu_clr <- logratio.transfo(as.matrix(datos_pseudo), logratio = 'CLR') 
+View(otu_clr)
 
 pca_before_clr <- pca(X = otu_clr, ncomp = 2)
 
@@ -111,8 +112,8 @@ sample_data <- sample_data(physeq_agl_combined)
 save_folder <- "C:/Users/Carla/Desktop/4o/Q1/TFG/samples"
 
 # Guardar otu_table en un archivo CSV
-write.csv(otu_table, file.path(save_folder, "otu_table_abr.csv"), row.names = TRUE)
+write.csv(otu_table, file.path(save_folder, "otu_table_alr.csv"), row.names = TRUE)
 
 # Guardar sample_data en un archivo CSV
-write.csv(data.frame(sample_data), file.path(save_folder, "sample_data_abr.csv"), row.names = TRUE)
+write.csv(data.frame(sample_data), file.path(save_folder, "sample_data_alr.csv"), row.names = TRUE)
 ```

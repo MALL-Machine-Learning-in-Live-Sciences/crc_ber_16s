@@ -1,0 +1,45 @@
+---
+title: "ML2"
+author: "Carla"
+date: "2024-04-08"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(phyloseq)
+library(mlr3)
+library(mlr3learners)
+library(mlr3tuning)
+library(mlr3pipelines)
+library(ranger)
+```
+
+# Experimento 2 - Leave cohort out variable Status (CRC/Control)
+
+```{r include=TRUE}
+physeq_output_clr_filtrado <- subset_samples(physeq_output_clr, sample_data(physeq_output_clr)$status != "adenoma")
+
+otu_table <- as(otu_table(physeq_output_clr_filtrado), "matrix")
+sample_data <- as.data.frame(sample_data(physeq_output_clr_filtrado))
+
+# Aquí meter solo status y project 
+# folds en función de cada valor de cohorte (project) 
+data_ml <- data.frame(otu_table, sample_data)
+
+
+nombres_columnas <- colnames(data_ml)
+nombres_columnas[nombres_columnas == "CCR..diferenciación."] <- "CRR_diferenciacion"
+nombres_columnas[nombres_columnas == "CCR..histología."] <- "CRR_histologia"
+nombres_columnas[nombres_columnas == "Age..years."] <- "Age_years"
+nombres_columnas[nombres_columnas == "BMI..kg.m.."] <- "BMI_kg_m"
+
+colnames(data_ml) <- nombres_columnas
+nombres_status <- unique(sample_data(physeq_output_clr_filtrado)$status)
+
+status <- sample_data$status
+data <- cbind(data_ml, status)
+data <- as.data.frame(data)
+data$status <- as.factor(data$status)
+```

@@ -1,0 +1,340 @@
+---
+title: "ML"
+author: "Carla"
+date: "2024-03-18"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(phyloseq)
+library(mlr3)
+library(mlr3learners)
+library(mlr3tuning)
+library(mlr3pipelines)
+library(ranger)
+```
+# Experimento 1 - ML con 15 PCAs y variable a predecir sería la cohorte. CV normal (10fold)
+
+Datos y PCs
+```{r include=TRUE}
+# Data pre MOBER 
+physeq_ml_clr_pre <- physeq_agl_combined
+physeq_ml_clr_pre
+
+otu_table_ml_pre <- otu_table(physeq_ml_clr_pre)
+pca_result <- prcomp(otu_table_ml_pre, scale. = FALSE)
+pc_scores <- pca_result$x[, 1:15]
+pc_scores <- as.matrix(pc_scores)
+
+data_pre <- sample_data(physeq_ml_clr_pre)
+data_pre <- as.data.frame(data_pre)
+
+summary(data_pre$project)
+table(data_pre$project)
+
+# Data post MOBER 
+physeq_ml_clr <- physeq_output_clr
+physeq_ml_clr
+
+otu_table_ml <- otu_table(physeq_ml_clr)
+pca_result <- prcomp(otu_table_ml, scale. = FALSE)
+pc_scores <- pca_result$x[, 1:15]
+pc_scores <- as.matrix(pc_scores)
+
+data <- sample_data(physeq_ml_clr)
+data <- as.data.frame(data)
+
+summary(data$project)
+table(data$project)
+```
+
+```{r include=TRUE}
+nombres_cohortes <- unique(sample_data(physeq_ml_clr_pre)$project)
+
+cohortes <- sample_data(physeq_ml_clr_pre)$project
+data_pre <- cbind(pc_scores, cohortes)
+data_pre <- as.data.frame(data_pre)
+data_pre$cohortes <- as.factor(data_pre$cohortes)
+
+for (col in names(data_pre)) {
+  if (is.character(data_pre[[col]]) || is.factor(data_pre[[col]])) {
+    data_pre[[col]] <- as.numeric(data_pre[[col]])
+  }
+}
+data_pre$cohortes <- as.factor(data_pre$cohortes)
+
+
+nombres_cohortes <- unique(sample_data(physeq_ml_clr)$project)
+
+cohortes <- sample_data(physeq_ml_clr)$project
+data <- cbind(pc_scores, cohortes)
+data <- as.data.frame(data)
+data$cohortes <- as.factor(data$cohortes)
+
+for (col in names(data)) {
+  if (is.character(data[[col]]) || is.factor(data[[col]])) {
+    data[[col]] <- as.numeric(data[[col]])
+  }
+}
+data$cohortes <- as.factor(data$cohortes)
+```
+
+SVM PRE MOBER 
+```{r include=TRUE}
+# Objeto de tarea
+task_svm_pre <- TaskClassif$new(id = "ml_svm", backend = data_pre, target = "cohortes")
+
+rsmp_holdout <- rsmp("holdout", ratio = 0.8)
+rsmp_holdout
+rsmp_holdout$instantiate(task = task_svm_pre)
+
+id_train <- rsmp_holdout$train_set(i = 1)
+id_test <- rsmp_holdout$test_set(i = 1)
+
+# Dos nuevas tasks (train y test)
+task_train_svm <- task_svm_pre$clone()$filter(id_train)
+task_test_svm  <- task_svm_pre$clone()$filter(id_test)
+
+# Modelo de aprendizaje automático (SVM)
+learner_svm <- lrn("classif.svm")
+
+# Entrenamiento del modelo
+learner_svm$train(task = task_train_svm)
+
+# Resampling strategy (10-fold cross-validation)
+resampling <- rsmp("cv", folds = 10)
+
+# Proceso de evaluación
+eval_svm_pre <- mlr3::resample(task = task_train_svm,
+                       learner = learner_svm,
+                       resampling = resampling)
+
+# Ejecución del proceso de evaluación
+result_svm_pre_ce <- eval_svm_pre$aggregate(measures=msr("classif.ce"))
+result_svm_pre_acc <- eval_svm_pre$aggregate(measures=msr("classif.acc"))
+
+# Predicción 
+predicciones_svm <- learner_svm$predict(
+                  task = task_test_svm
+                )
+pred_svm_pre_ce <- predicciones_svm$score(measures = msr("classif.ce"))
+pred_svm_pre_acc <- predicciones_svm$score(measures = msr("classif.acc"))
+```
+
+SVM POST MOBER 
+```{r include=TRUE}
+# Objeto de tarea
+task_svm_post <- TaskClassif$new(id = "ml_svm", backend = data, target = "cohortes")
+
+rsmp_holdout <- rsmp("holdout", ratio = 0.8)
+rsmp_holdout$instantiate(task = task_svm_post)
+
+id_train <- rsmp_holdout$train_set(i = 1)
+id_test <- rsmp_holdout$test_set(i = 1)
+
+# Dos nuevas tasks (train y test)
+task_train_svm_post <- task_svm_post$clone()$filter(id_train)
+task_test_svm_post  <- task_svm_post$clone()$filter(id_test)
+
+# Modelo de aprendizaje automático (SVM)
+learner_svm <- lrn("classif.svm")
+
+# Entrenamiento del modelo
+learner_svm$train(task = task_train_svm_post)
+
+# Resampling strategy (10-fold cross-validation)
+resampling <- rsmp("cv", folds = 10)
+
+# Proceso de evaluación
+eval_svm_post <- mlr3::resample(task = task_train_svm_post,
+                       learner = learner_svm,
+                       resampling = resampling)
+
+# Ejecución del proceso de evaluación
+result_svm_post_ce <- eval_svm_post$aggregate(measures=msr("classif.ce"))
+result_svm_post_acc <- eval_svm_post$aggregate(measures=msr("classif.acc"))
+
+# Predicción 
+predicciones_svm_post <- learner_svm$predict(
+                  task = task_test_post
+                )
+
+pred_svm_post_ce <- predicciones_svm_post$score(measures = msr("classif.ce"))
+pred_svm_post_acc <- predicciones_svm_post$score(measures = msr("classif.acc"))
+```
+
+Random Forest PRE MOBER 
+```{r include=TRUE}
+# Objeto de tarea
+task_rf_pre <- TaskClassif$new(id = "ml_rf", backend = data_pre, target = "cohortes")
+
+rsmp_holdout <- rsmp("holdout", ratio = 0.8)
+rsmp_holdout$instantiate(task = task_rf_pre)
+
+id_train <- rsmp_holdout$train_set(i = 1)
+id_test <- rsmp_holdout$test_set(i = 1)
+
+# Dos nuevas tasks (train y test)
+task_train_rf <- task_rf_pre$clone()$filter(id_train)
+task_test_rf  <- task_rf_pre$clone()$filter(id_test)
+
+# Modelo de aprendizaje automático (RF)
+learner_rf <- lrn("classif.ranger")
+
+# Entrenamiento del modelo
+learner_rf$train(task = task_train_rf)
+
+# Resampling strategy (10-fold cross-validation)
+resampling <- rsmp("cv", folds = 10)
+
+# Proceso de evaluación
+eval_rf_pre <- mlr3::resample(task = task_train_rf,
+                       learner = learner_rf,
+                       resampling = resampling)
+
+# Ejecución del proceso de evaluación
+result_rf_pre_ce <- eval_rf_pre$aggregate(measures=msr("classif.ce"))
+result_rf_pre_acc <- eval_rf_pre$aggregate(measures=msr("classif.acc"))
+
+# Predicción 
+predicciones_rf <- learner_rf$predict(
+                  task = task_test_rf
+                )
+pred_rf_pre_ce <- predicciones_rf$score(measures = msr("classif.ce"))
+pred_rf_pre_acc <- predicciones_rf$score(measures = msr("classif.acc"))
+```
+
+```{r include=TRUE}
+# Objeto de tarea
+task_rf_post <- TaskClassif$new(id = "ml_rf", backend = data, target = "cohortes")
+
+rsmp_holdout <- rsmp("holdout", ratio = 0.8)
+rsmp_holdout$instantiate(task = task_rf_post)
+
+id_train <- rsmp_holdout$train_set(i = 1)
+id_test <- rsmp_holdout$test_set(i = 1)
+
+# Dos nuevas tasks (train y test)
+task_train_rf_post <- task_rf_post$clone()$filter(id_train)
+task_test_rf_post  <- task_rf_post$clone()$filter(id_test)
+
+# Modelo de aprendizaje automático (RF)
+learner_rf <- lrn("classif.ranger")
+
+# Entrenamiento del modelo
+learner_rf$train(task = task_train_rf_post)
+
+# Resampling strategy (10-fold cross-validation)
+resampling <- rsmp("cv", folds = 10)
+
+# Proceso de evaluación
+eval_rf_post <- mlr3::resample(task = task_rf_post,
+                       learner = learner_rf,
+                       resampling = resampling)
+
+# Ejecución del proceso de evaluación
+result_rf_post_ce <- eval_rf_post$aggregate(measures=msr("classif.ce"))
+result_rf_post_acc <- eval_rf_post$aggregate(measures=msr("classif.acc"))
+
+# Predicción 
+predicciones_rf_post <- learner_rf$predict(
+                  task = task_test_rf_post
+                )
+pred_rf_post_ce <- predicciones_rf_post$score(measures = msr("classif.ce"))
+pred_rf_post_acc <- predicciones_rf_post$score(measures = msr("classif.acc"))
+```
+
+GLMNet PRE MOBER 
+```{r include=TRUE}
+# Objeto de tarea
+task_glmn_pre <- TaskClassif$new(id = "ml_glmn", backend = data_pre, target = "cohortes")
+
+rsmp_holdout <- rsmp("holdout", ratio = 0.8)
+rsmp_holdout$instantiate(task = task_glmn_pre)
+
+id_train <- rsmp_holdout$train_set(i = 1)
+id_test <- rsmp_holdout$test_set(i = 1)
+
+# Dos nuevas tasks (train y test)
+task_train_glmn <- task_glmn_pre$clone()$filter(id_train)
+task_test_glmn  <- task_glmn_pre$clone()$filter(id_test)
+
+# Modelo de aprendizaje automático (GLMNet)
+learner_glmn <- lrn("classif.glmnet")
+
+# Entrenamiento del modelo
+learner_glmn$train(task = task_train_glmn)
+
+# Resampling strategy (10-fold cross-validation)
+resampling <- rsmp("cv", folds = 10)
+
+# Proceso de evaluación
+eval_glmn_pre <- mlr3::resample(task = task_glmn_pre,
+                       learner = learner_glmn,
+                       resampling = resampling)
+
+# Ejecución del proceso de evaluación
+result_glmn_pre_ce <- eval_glmn_pre$aggregate(measures=msr("classif.ce"))
+result_glmn_pre_acc <- eval_glmn_pre$aggregate(measures=msr("classif.acc"))
+
+# Predicción 
+predicciones_glmn <- learner_glmn$predict(
+                  task = task_test_glmn
+                )
+pred_glmn_pre_ce <- predicciones_glmn$score(measures = msr("classif.ce"))
+pred_glmn_pre_acc <- predicciones_glmn$score(measures = msr("classif.acc"))
+```
+
+```{r include=TRUE}
+# Objeto de tarea
+task_glmn_post <- TaskClassif$new(id = "ml_glmn", backend = data, target = "cohortes")
+
+rsmp_holdout <- rsmp("holdout", ratio = 0.8)
+rsmp_holdout$instantiate(task = task_glmn_post)
+
+id_train <- rsmp_holdout$train_set(i = 1)
+id_test <- rsmp_holdout$test_set(i = 1)
+
+# Dos nuevas tasks (train y test)
+task_train_glmn_post <- task_glmn_post$clone()$filter(id_train)
+task_test_glmn_post  <- task_glmn_post$clone()$filter(id_test)
+
+# Modelo de aprendizaje automático (GLMNet)
+learner_glmn <- lrn("classif.glmnet")
+
+# Entrenamiento del modelo
+learner_glmn$train(task = task_train_glmn_post)
+
+# Resampling strategy (10-fold cross-validation)
+resampling <- rsmp("cv", folds = 10)
+
+# Proceso de evaluación
+eval_glmn_post <- mlr3::resample(task = task_train_glmn_post,
+                       learner = learner_glmn,
+                       resampling = resampling)
+
+# Ejecución del proceso de evaluación
+result_glmn_post_ce <- eval_glmn_post$aggregate(measures=msr("classif.ce"))
+result_glmn_post_acc <- eval_glmn_post$aggregate(measures=msr("classif.acc"))
+
+# Predicción 
+predicciones_glmn_post <- learner_glmn$predict(
+                  task = task_test_glmn_post
+                )
+pred_glmn_post_ce <- predicciones_glmn_post$score(measures = msr("classif.ce"))
+pred_glmn_post_acc <- predicciones_glmn_post$score(measures = msr("classif.acc"))
+
+```
+
+Resultados
+```{r include=TRUE}
+resultados <- data.frame(
+  Modelo = c("SVM_pre", "SVM_post", "RandomForest_pre", "RandomForest_post", "GLMNet_pre", "GLMNet_post"),
+  Error = c(result_svm_pre_ce, result_svm_post_ce, result_rf_pre_ce, result_rf_post_ce, result_glmn_pre_ce, result_glmn_post_ce),
+  Precisión = c(result_svm_pre_acc, result_svm_post_acc, result_rf_pre_acc, result_rf_post_acc, result_glmn_pre_acc, result_glmn_post_acc)
+)
+
+resultados
+``` 

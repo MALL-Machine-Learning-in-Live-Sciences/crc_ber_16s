@@ -18,8 +18,8 @@ Creamos el objeto phyloseq con el que crearemos la PCA a partir del output .h5ad
 # Especifica la ruta al directorio que contiene los archivos CSV
 csv_directory <- "C:/Users/Carla/Desktop/4o/Q1/TFG/samples/output/"
 
-otu_file <- list.files(path = csv_directory, pattern = "otu_table_abr.csv", full.names = TRUE)
-sample_file <- list.files(path = csv_directory, pattern = "sample_data_abr.csv", full.names = TRUE)
+otu_file <- list.files(path = csv_directory, pattern = "otu_table_alr.csv", full.names = TRUE)
+sample_file <- list.files(path = csv_directory, pattern = "sample_data_alr.csv", full.names = TRUE)
 
 otu <- read.csv(otu_file, row.names = 1)
 sample_data <- read.csv(sample_file, row.names = 1)
@@ -28,8 +28,8 @@ otu_table <- otu_table(otu, taxa_are_rows = FALSE)
 sample_data <- sample_data(sample_data)
 
 # Crear objeto phyloseq
-physeq_output_abr <- phyloseq(otu_table, sample_data)
-physeq_output_abr
+physeq_output_alr <- phyloseq(otu_table, sample_data)
+physeq_output_alr
 ```
 
 Representamos PCA
@@ -100,8 +100,8 @@ plot_pca_post_clr <- PLSDAbatch::Scatter_Density(object = pca_post_alr,
                                                batch.legend.title = 'Project',
                                                trt.legend.title = 'Status',
                                                title = 'With correction',
-                                               xlim = c(-2.5,2.5), 
-                                               ylim = c(-10, 5))
+                                               xlim = c(-20, 20), 
+                                               ylim = c(-20, 20))
 ```
 
 Abundancias relativas 
