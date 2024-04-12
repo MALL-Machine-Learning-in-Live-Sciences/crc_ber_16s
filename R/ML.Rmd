@@ -107,13 +107,13 @@ learner_svm$train(task = task_train_svm)
 resampling <- rsmp("cv", folds = 10)
 
 # Proceso de evaluación
-eval_svm_pre <- mlr3::resample(task = task_train_svm,
+eval_svm_pre <- mlr3::resample(task = task_svm_pre,
                        learner = learner_svm,
                        resampling = resampling)
 
 # Ejecución del proceso de evaluación
 result_svm_pre_ce <- eval_svm_pre$aggregate(measures=msr("classif.ce"))
-result_svm_pre_acc <- eval_svm_pre$aggregate(measures=msr("classif.acc"))
+result_svm_pre_acc <- eval_svm_pre$aggregate(measures=msr("classif.bacc"))
 
 # Predicción 
 predicciones_svm <- learner_svm$predict(
@@ -148,13 +148,13 @@ learner_svm$train(task = task_train_svm_post)
 resampling <- rsmp("cv", folds = 10)
 
 # Proceso de evaluación
-eval_svm_post <- mlr3::resample(task = task_train_svm_post,
+eval_svm_post <- mlr3::resample(task = task_svm_post,
                        learner = learner_svm,
                        resampling = resampling)
 
 # Ejecución del proceso de evaluación
 result_svm_post_ce <- eval_svm_post$aggregate(measures=msr("classif.ce"))
-result_svm_post_acc <- eval_svm_post$aggregate(measures=msr("classif.acc"))
+result_svm_post_acc <- eval_svm_post$aggregate(measures=msr("classif.bacc"))
 
 # Predicción 
 predicciones_svm_post <- learner_svm$predict(
@@ -190,13 +190,13 @@ learner_rf$train(task = task_train_rf)
 resampling <- rsmp("cv", folds = 10)
 
 # Proceso de evaluación
-eval_rf_pre <- mlr3::resample(task = task_train_rf,
+eval_rf_pre <- mlr3::resample(task = task_rf_pre,
                        learner = learner_rf,
                        resampling = resampling)
 
 # Ejecución del proceso de evaluación
 result_rf_pre_ce <- eval_rf_pre$aggregate(measures=msr("classif.ce"))
-result_rf_pre_acc <- eval_rf_pre$aggregate(measures=msr("classif.acc"))
+result_rf_pre_acc <- eval_rf_pre$aggregate(measures=msr("classif.bacc"))
 
 # Predicción 
 predicciones_rf <- learner_rf$predict(
@@ -236,7 +236,7 @@ eval_rf_post <- mlr3::resample(task = task_rf_post,
 
 # Ejecución del proceso de evaluación
 result_rf_post_ce <- eval_rf_post$aggregate(measures=msr("classif.ce"))
-result_rf_post_acc <- eval_rf_post$aggregate(measures=msr("classif.acc"))
+result_rf_post_acc <- eval_rf_post$aggregate(measures=msr("classif.bacc"))
 
 # Predicción 
 predicciones_rf_post <- learner_rf$predict(
@@ -277,7 +277,7 @@ eval_glmn_pre <- mlr3::resample(task = task_glmn_pre,
 
 # Ejecución del proceso de evaluación
 result_glmn_pre_ce <- eval_glmn_pre$aggregate(measures=msr("classif.ce"))
-result_glmn_pre_acc <- eval_glmn_pre$aggregate(measures=msr("classif.acc"))
+result_glmn_pre_acc <- eval_glmn_pre$aggregate(measures=msr("classif.bacc"))
 
 # Predicción 
 predicciones_glmn <- learner_glmn$predict(
@@ -311,13 +311,13 @@ learner_glmn$train(task = task_train_glmn_post)
 resampling <- rsmp("cv", folds = 10)
 
 # Proceso de evaluación
-eval_glmn_post <- mlr3::resample(task = task_train_glmn_post,
+eval_glmn_post <- mlr3::resample(task = task_glmn_post,
                        learner = learner_glmn,
                        resampling = resampling)
 
 # Ejecución del proceso de evaluación
 result_glmn_post_ce <- eval_glmn_post$aggregate(measures=msr("classif.ce"))
-result_glmn_post_acc <- eval_glmn_post$aggregate(measures=msr("classif.acc"))
+result_glmn_post_acc <- eval_glmn_post$aggregate(measures=msr("classif.bacc"))
 
 # Predicción 
 predicciones_glmn_post <- learner_glmn$predict(
