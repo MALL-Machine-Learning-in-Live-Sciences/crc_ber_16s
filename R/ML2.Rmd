@@ -43,7 +43,7 @@ data_ml$project <- as.factor(data_ml$project)
 
 # cancer = 1, normal = 2
 
-# Lo que hay que hacer: leave cohort out es entrenar con 6 cohortes y dejar la 10 para test y así para todas. Por lo tanto, separar data_ml con respecto a las cohortes para tener 9 muestras. La variable que queremos predecir es status (cancer o normal) --> sereá la que se meta en la task como target supongo. Igual que el experimento anterior pero cambiando el método de resampling para hacerlo con LOCO. 
+# Lo que hay que hacer: leave cohort out es entrenar con 6 cohortes y dejar la 7 para test y así para todas. Por lo tanto, separar data_ml con respecto a las cohortes para tener 6 muestras. La variable que queremos predecir es status (cancer o normal) --> será la que se meta en la task como target. Igual que el experimento anterior pero cambiando el método de resampling para hacerlo con LOCO. 
 ```
 
 ```{r include=TRUE}
