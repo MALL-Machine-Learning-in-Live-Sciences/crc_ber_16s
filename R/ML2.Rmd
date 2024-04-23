@@ -20,26 +20,53 @@ library(caret)
 # Experimento 2 - Leave cohort out variable Status (CRC/Control)
 
 ```{r include=TRUE}
-physeq_output_clr_filtrado <- subset_samples(physeq_output_clr, sample_data(physeq_output_clr)$status != "adenoma")
+# PRE MOBER 
+physeq_pre <- subset_samples(physeq_agl_combined, sample_data(physeq_output_clr)$status != "adenoma")
 
-otu_table <- otu_table(physeq_output_clr_filtrado)
+otu_table <- t(otu_table(physeq_pre))
+otu_table <- as.matrix(otu_table)
+status <- sample_data(physeq_pre)$status
+project <- sample_data(physeq_pre)$project
+
+data_ml_pre <- cbind(otu_table, status, project)
+data_ml_pre <- as.data.frame(data_ml_pre)
+data_ml_pre$status <- as.factor(data_ml_pre$status)
+data_ml_pre$project <- as.factor(data_ml_pre$project)
+
+for (col in names(data_ml_pre)) {
+  if (is.character(data_ml_pre[[col]]) || is.factor(data_ml_pre[[col]])) {
+    data_ml_pre[[col]] <- as.numeric(data_ml_pre[[col]])
+  }
+}
+
+data_ml_pre$status <- as.factor(data_ml_pre$status)
+data_ml_pre$project <- as.factor(data_ml_pre$project)
+
+
+# POST MOBER
+physeq_post <- subset_samples(physeq_output_clr, sample_data(physeq_output_clr)$status != "adenoma")
+
+otu_table <- otu_table(physeq_post)
 otu_table <- as.matrix(otu_table)
 status <- sample_data(physeq_output_clr_filtrado)$status
 project <- sample_data(physeq_output_clr_filtrado)$project
 
-data_ml <- cbind(otu_table, status, project)
-data_ml <- as.data.frame(data_ml)
-data_ml$status <- as.factor(data_ml$status)
-data_ml$project <- as.factor(data_ml$project)
+data_ml_post <- cbind(otu_table, status, project)
+data_ml_post <- as.data.frame(data_ml_post)
+data_ml_post$status <- as.factor(data_ml_post$status)
+data_ml_post$project <- as.factor(data_ml_post$project)
 
-for (col in names(data_ml)) {
-  if (is.character(data_ml[[col]]) || is.factor(data_ml[[col]])) {
-    data_ml[[col]] <- as.numeric(data_ml[[col]])
+for (col in names(data_ml_post)) {
+  if (is.character(data_ml_post[[col]]) || is.factor(data_ml_post[[col]])) {
+    data_ml_post[[col]] <- as.numeric(data_ml_post[[col]])
   }
 }
 
-data_ml$status <- as.factor(data_ml$status)
-data_ml$project <- as.factor(data_ml$project)
+data_ml_post$status <- as.factor(data_ml_post$status)
+data_ml_post$project <- as.factor(data_ml_post$project)
+
+
+
 
 # cancer = 1, normal = 2
 
@@ -47,31 +74,77 @@ data_ml$project <- as.factor(data_ml$project)
 ```
 
 ```{r include=TRUE}
-num_cohortes <- 7
-
-cohort_indices <- lapply(1:num_cohortes, function(i) which(data_ml$project == i))
-
-folds <- list()
-
-for (i in 1:num_cohortes) {
-  test_indices <- cohort_indices[[i]]
-  train_indices <- unlist(cohort_indices[-i])
+# Función de remuestreo leave-cohort-out
+LCO <- function(task, folds = NULL, ...) {
+  cohort_levels <- unique(data$status)  # Obtener los niveles de las cohortes
+  folds <- factor(data$status, levels = cohort_levels)  # Definir los folds
   
-  folds[[i]] <- list(train = train_indices, test = test_indices)
+  idx_list <- list()
+  for (i in 1:length(cohort_levels)) {
+    idx <- which(data$status != cohort_levels[i])
+    idx_list[[i]] <- idx
+  }
+  
+  rsmp_instance <- rsmp("custom", idx = idx_list, split = function(task, idx_train, idx_test, ...) {
+    list(
+      train = idx_train,
+      test = idx_test
+    )
+  })
+  
+  return(rsmp_instance)
+} 
+
+task <- TaskClassif$new(id = "ml2_svm", backend = data_ml_pre, target = "status")
+LCO(task)
+
+run_ml_pipeline <- function(data, model) {
+  
+  # Definición tasks
+  if (model == "svm") {
+    task_pre <- TaskClassif$new(id = "ml2_svm", backend = data_ml_pre, target = "status")
+    task_post <- TaskClassif$new(id = "ml2_svm_post", backend = data_ml_post, target = "status")
+  } else if (model == "rf") {
+    task_pre <- TaskClassif$new(id = "ml2_rf", backend = data_ml_pre, target = "status")
+    task_post <- TaskClassif$new(id = "ml2_rf_post", backend = data_ml_post, target = "status")
+  } else if (model == "glmn") {
+    task_pre <- TaskClassif$new(id = "ml2_rf", backend = data_ml_pre, target = "status")
+    task_post <- TaskClassif$new(id = "ml2_rf_post", backend = data_ml_post, target = "status")
+  } else {
+    stop("Modelo no válido")
+  }
+  
+  # Modelo de aprendizaje automático
+  if (model == "svm") {
+    learner <- lrn("classif.svm")
+  } else if (model == "rf") {
+    learner <- lrn("classif.ranger")
+  } else if (model == "glmn") {
+    learner <- lrn("classif.glmnet")
+  }
+  
+  # Estrategia de remuestreo (10-fold cross-validation)
+  resampling <- LCO(task)
+  
+  # Proceso de evaluación
+  eval_pre <- mlr3::resample(task = task_pre, learner = learner, resampling = resampling)
+  eval_post <- mlr3::resample(task = task_post, learner = learner, resampling = resampling)
+  
+  # Obtención métricas
+  result_ce_pre <- eval_pre$aggregate(measures = msr("classif.ce"))
+  result_bacc_pre <- eval_pre$aggregate(measures = msr("classif.bacc"))
+  
+  result_ce_post <- eval_post$aggregate(measures = msr("classif.ce"))
+  result_bacc_post <- eval_post$aggregate(measures = msr("classif.bacc"))
+  
+  # Resultados
+  return(list(ce_pre = result_ce_pre, 
+              ce_post = result_ce_post, 
+              bacc_pre = result_bacc_pre, 
+              bacc_post = result_bacc_post))
 }
-```
 
-```{r include=TRUE}
-task_svm_pre <- TaskClassif$new(id = "ml_loco_svm", backend = data_ml, target = "status")
-
-learner_svm <- lrn("classif.svm")
-
-resampling <- rsmp("custom", folds = folds)
-
-eval_svm_pre <- mlr3::resample(task = task_svm_pre,
-                       learner = learner_svm,
-                       resampling = resampling)
-
-result_svm_pre_ce <- eval_svm_pre$aggregate(measures=msr("classif.ce"))
-result_svm_pre_acc <- eval_svm_pre$aggregate(measures=msr("classif.bacc"))
+results_svm <- run_ml_pipeline(data, "svm")
+results_rf <- run_ml_pipeline(data, "rf")
+results_glmn <- run_ml_pipeline(data, "glmn")
 ```
