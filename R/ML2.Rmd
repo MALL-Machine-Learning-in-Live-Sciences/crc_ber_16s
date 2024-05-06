@@ -42,6 +42,16 @@ for (col in names(data_ml_pre)) {
 data_ml_pre$status <- as.factor(data_ml_pre$status)
 data_ml_pre$project <- as.factor(data_ml_pre$project)
 
+# Dividir el conjunto de datos en siete subconjuntos basados en la columna status
+subconjuntos_pre <- split(data_ml_pre, data_ml_pre$project)
+project__pre_1 <- subconjuntos_pre$`1`
+project__pre_2 <- subconjuntos_pre$`2`
+project__pre_3 <- subconjuntos_pre$`3`
+project__pre_4 <- subconjuntos_pre$`4`
+project__pre_5 <- subconjuntos_pre$`5`
+project__pre_6 <- subconjuntos_pre$`6`
+project__pre_7 <- subconjuntos_pre$`7`
+
 
 # POST MOBER
 physeq_post <- subset_samples(physeq_output_clr, sample_data(physeq_output_clr)$status != "adenoma")
@@ -65,8 +75,14 @@ for (col in names(data_ml_post)) {
 data_ml_post$status <- as.factor(data_ml_post$status)
 data_ml_post$project <- as.factor(data_ml_post$project)
 
-
-
+subconjuntos_post <- split(data_ml_post, data_ml_post$project)
+project__post_1 <- subconjuntos_post$`1`
+project__post_2 <- subconjuntos_post$`2`
+project__post_3 <- subconjuntos_post$`3`
+project__post_4 <- subconjuntos_post$`4`
+project__post_5 <- subconjuntos_post$`5`
+project__post_6 <- subconjuntos_post$`6`
+project__post_7 <- subconjuntos_post$`7`
 
 # cancer = 1, normal = 2
 
@@ -74,29 +90,43 @@ data_ml_post$project <- as.factor(data_ml_post$project)
 ```
 
 ```{r include=TRUE}
-# Función de remuestreo leave-cohort-out
-LCO <- function(task, folds = NULL, ...) {
-  cohort_levels <- unique(data$status)  # Obtener los niveles de las cohortes
-  folds <- factor(data$status, levels = cohort_levels)  # Definir los folds
+# Función para LCO
+lco_experiment <- function(data, test_project, method) {
   
-  idx_list <- list()
-  for (i in 1:length(cohort_levels)) {
-    idx <- which(data$status != cohort_levels[i])
-    idx_list[[i]] <- idx
-  }
+  train_data <- data[!data$project %in% test_project, ]
+  test_data <- data[data$project %in% test_project, ]
   
-  rsmp_instance <- rsmp("custom", idx = idx_list, split = function(task, idx_train, idx_test, ...) {
-    list(
-      train = idx_train,
-      test = idx_test
-    )
-  })
+  control <- trainControl(method = "none")
   
-  return(rsmp_instance)
-} 
+  modelo <- train(status ~ ., 
+                  data = train_data, 
+                  method = method, 
+                  trControl = control)
+  
+  predicciones <- predict(modelo, newdata = test_data)
+  accuracy <- confusionMatrix(predicciones, test_data$status)$overall['Accuracy']
+  return(accuracy)
+}
 
-task <- TaskClassif$new(id = "ml2_svm", backend = data_ml_pre, target = "status")
-LCO(task)
+resultados <- list()
+
+for (method in c("rf", "svmRadial")) {
+  resultados[[method]] <- list()
+  for (i in 1:7) {
+    test_project <- as.factor(i)
+    resultados[[method]][[i]] <- lco_experiment(data_ml_pre, test_project, method)
+  }
+}
+
+for (method in c("rf", "svmRadial")) {
+  cat("Resultados para", method, ":\n")
+  names(resultados[[method]]) <- paste("Project", 1:7)
+  print(resultados[[method]])
+  cat("\n")
+}
+```
+
+```{r include=TRUE}
 
 run_ml_pipeline <- function(data, model) {
   
@@ -124,7 +154,7 @@ run_ml_pipeline <- function(data, model) {
   }
   
   # Estrategia de remuestreo (10-fold cross-validation)
-  resampling <- LCO(task)
+  resampling <- rsmp("loo")
   
   # Proceso de evaluación
   eval_pre <- mlr3::resample(task = task_pre, learner = learner, resampling = resampling)
@@ -147,4 +177,26 @@ run_ml_pipeline <- function(data, model) {
 results_svm <- run_ml_pipeline(data, "svm")
 results_rf <- run_ml_pipeline(data, "rf")
 results_glmn <- run_ml_pipeline(data, "glmn")
+```
+
+```{r include=TRUE}
+library(randomForest)
+
+cohortes <- unique(data_ml_pre$project)
+resultados <- data.frame(cohorte = character(), precision = numeric())
+
+for (cohorte_actual in cohortes) {
+  datos_entrenamiento <- data_ml_pre[data_ml_pre$cohorte != cohorte_actual, ]
+  datos_test <- data_ml_pre[data_ml_pre$cohorte == cohorte_actual, ]
+  
+  modelo_rf <- randomForest(Y ~ ., data = datos_entrenamiento)
+  
+  predicciones <- predict(modelo_rf, newdata = datos_test)
+  
+  precision <- sum(predicciones == datos_test$Y) / length(predicciones)
+  
+  resultados <- rbind(resultados, data.frame(cohorte = cohorte_actual, precision = precision))
+}
+
+print(resultados)
 ```
