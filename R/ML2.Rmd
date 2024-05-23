@@ -23,15 +23,15 @@ library(caret)
 # PRE MOBER 
 physeq_pre <- subset_samples(physeq_agl_combined, sample_data(physeq_output_clr)$status != "adenoma")
 
-otu_table <- t(otu_table(physeq_pre))
-otu_table <- as.matrix(otu_table)
-status <- sample_data(physeq_pre)$status
-project <- sample_data(physeq_pre)$project
+otu_table_pre <- t(otu_table(physeq_pre))
+otu_table_pre <- as.matrix(otu_table)
+status_pre <- sample_data(physeq_pre)$status
+project_pre <- sample_data(physeq_pre)$project
 
-data_ml_pre <- cbind(otu_table, status, project)
+data_ml_pre <- cbind(otu_table_pre, status_pre, project_pre)
 data_ml_pre <- as.data.frame(data_ml_pre)
-data_ml_pre$status <- as.factor(data_ml_pre$status)
-data_ml_pre$project <- as.factor(data_ml_pre$project)
+data_ml_pre$status_pre <- as.factor(data_ml_pre$status)
+data_ml_pre$project_pre <- as.factor(data_ml_pre$project)
 
 for (col in names(data_ml_pre)) {
   if (is.character(data_ml_pre[[col]]) || is.factor(data_ml_pre[[col]])) {
@@ -39,22 +39,22 @@ for (col in names(data_ml_pre)) {
   }
 }
 
-data_ml_pre$status <- factor(data_ml_pre$status)
-data_ml_pre$project <- factor(data_ml_pre$project)
+data_ml_pre$status_pre <- as.factor(data_ml_pre$status_pre)
+data_ml_pre$project_pre <- as.numeric(data_ml_pre$project_pre)
 
 
 # POST MOBER
 physeq_post <- subset_samples(physeq_output_clr, sample_data(physeq_output_clr)$status != "adenoma")
 
-otu_table <- otu_table(physeq_post)
-otu_table <- as.matrix(otu_table)
-status <- sample_data(physeq_output_clr_filtrado)$status
-project <- sample_data(physeq_output_clr_filtrado)$project
+otu_table_post <- otu_table(physeq_post)
+otu_table_post <- as.matrix(otu_table)
+status_post <- sample_data(physeq_output_clr_filtrado)$status
+project_post <- sample_data(physeq_output_clr_filtrado)$project
 
-data_ml_post <- cbind(otu_table, status, project)
+data_ml_post <- cbind(otu_table_post, status_post, project_post)
 data_ml_post <- as.data.frame(data_ml_post)
-data_ml_post$status <- as.factor(data_ml_post$status)
-data_ml_post$project <- as.factor(data_ml_post$project)
+data_ml_post$status_post <- as.factor(data_ml_post$status)
+data_ml_post$project_post <- as.factor(data_ml_post$project)
 
 for (col in names(data_ml_post)) {
   if (is.character(data_ml_post[[col]]) || is.factor(data_ml_post[[col]])) {
@@ -62,8 +62,8 @@ for (col in names(data_ml_post)) {
   }
 }
 
-data_ml_post$status <- factor(data_ml_post$status)
-data_ml_post$project <- factor(data_ml_post$project)
+data_ml_post$status_post <- as.factor(data_ml_post$status)
+data_ml_post$project_post <- as.numeric(data_ml_post$project)
 
 # cancer = 1, normal = 2
 
@@ -72,48 +72,18 @@ data_ml_post$project <- factor(data_ml_post$project)
 
 ```{r include=TRUE}
 
-task <- TaskClassif$new(id = "status", backend = data_ml, target = "status")
-
-# Verificar las cohortes disponibles
-cohortes <- unique(data_ml$project)
-print(cohortes)
-
-# Crear el objeto de validación cruzada personalizada
-custom_cv <- rsmp("custom_cv")
-
-# Definir las particiones
-f <- as.factor(data_ml$project)
-
-# Instanciar la validación cruzada personalizada
-custom_cv$instantiate(task, f = f)
-
-
-# Ejemplo: obtener los conjuntos de entrenamiento y prueba para la primera iteración
-train_set <- custom_cv$train_set(1)
-test_set <- custom_cv$test_set(1)
-
-print(train_set)
-print(test_set)
-
-# Puedes visualizar los datos de entrenamiento y prueba si lo deseas
-data_ml[train_set, ]
-data_ml[test_set, ]
-```
-
-```{r include=TRUE}
-
 run_ml_pipeline <- function(data_ml_pre, data_ml_post, model) {
 
   # Definición tasks
   if (model == "svm") {
-    task_pre <- TaskClassif$new(id = "ml2_svm", backend = data_ml_pre, target = "status")
-    task_post <- TaskClassif$new(id = "ml2_svm_post", backend = data_ml_post, target = "status")
+    task_pre <- TaskClassif$new(id = "ml2_svm", backend = data_ml_pre, target = "status_pre")
+    task_post <- TaskClassif$new(id = "ml2_svm_post", backend = data_ml_post, target = "status_post")
   } else if (model == "rf") {
-    task_pre <- TaskClassif$new(id = "ml2_rf", backend = data_ml_pre, target = "status")
-    task_post <- TaskClassif$new(id = "ml2_rf_post", backend = data_ml_post, target = "status")
+    task_pre <- TaskClassif$new(id = "ml2_rf", backend = data_ml_pre, target = "status_pre")
+    task_post <- TaskClassif$new(id = "ml2_rf_post", backend = data_ml_post, target = "status_post")
   } else if (model == "glmn") {
-    task_pre <- TaskClassif$new(id = "ml2_rf", backend = data_ml_pre, target = "status")
-    task_post <- TaskClassif$new(id = "ml2_rf_post", backend = data_ml_post, target = "status")
+    task_pre <- TaskClassif$new(id = "ml2_glmn", backend = data_ml_pre, target = "status_pre")
+    task_post <- TaskClassif$new(id = "ml2_glmn_post", backend = data_ml_post, target = "status_post")
   }
   
   # Modelo de aprendizaje automático
@@ -129,58 +99,114 @@ run_ml_pipeline <- function(data_ml_pre, data_ml_post, model) {
   custom_cv_pre <- rsmp("custom_cv")
   custom_cv_post <- rsmp("custom_cv")
   
+  
   # Definir las particiones basadas en la columna 'project'
-  f_pre <- as.factor(data_ml_pre$project)
-  f_post <- as.factor(data_ml_post$project)
+  f_pre <- as.factor(data_ml_pre$project_pre)
+  f_post <- as.factor(data_ml_post$project_post)
   
   # Instanciar la validación cruzada personalizada
   custom_cv_pre$instantiate(task_pre, f = f_pre)
   custom_cv_post$instantiate(task_post, f = f_post)
   
   # Proceso de evaluación
-  eval_pre <- mlr3::resample(task = task_pre, learner = learner, resampling = resampling)
-  eval_post <- mlr3::resample(task = task_post, learner = learner, resampling = resampling)
+  eval_pre <- mlr3::resample(task = task_pre, learner = learner, resampling = custom_cv_pre)
+  eval_post <- mlr3::resample(task = task_post, learner = learner, resampling = custom_cv_post)
   
   # Obtención métricas
-  result_ce_pre <- eval_pre$aggregate(measures = msr("classif.ce"))
-  result_bacc_pre <- eval_pre$aggregate(measures = msr("classif.bacc"))
+  result_ce_pre <- eval_pre$aggregate(msr("classif.ce"))
+  result_bacc_pre <- eval_pre$aggregate(msr("classif.bacc"))
   
-  result_ce_post <- eval_post$aggregate(measures = msr("classif.ce"))
-  result_bacc_post <- eval_post$aggregate(measures = msr("classif.bacc"))
+  result_ce_post <- eval_post$aggregate(msr("classif.ce"))
+  result_bacc_post <- eval_post$aggregate(msr("classif.bacc"))
   
-  # Resultados por iteración (para ver el rendimiento en cada cohorte)
-  results_by_fold_pre <- lapply(seq_len(custom_cv_pre$iters), function(i) {
-    train_set <- custom_cv_pre$train_set(i)
-    test_set <- custom_cv_pre$test_set(i)
+  # Resultados por cohorte
+  results_per_cohort_pre <- lapply(unique(data_ml_pre$project), function(cohort) {
+    cohort_idx <- which(data_ml_pre$project == cohort)
+    cohort_preds <- eval_pre$prediction()$filter(row_ids = cohort_idx)
     list(
-      train_cohort = unique(data_pre$project[train_set]),
-      test_cohort = unique(data_pre$project[test_set]),
-      ce = eval_pre$resample_result(i)$score(msr("classif.ce")),
-      bacc = eval_pre$resample_result(i)$score(msr("classif.bacc"))
+      cohort = cohort,
+      ce = cohort_preds$score(msr("classif.ce")),
+      bacc = cohort_preds$score(msr("classif.bacc"))
     )
   })
   
-  results_by_fold_post <- lapply(seq_len(custom_cv_post$iters), function(i) {
-    train_set <- custom_cv_post$train_set(i)
-    test_set <- custom_cv_post$test_set(i)
+  results_per_cohort_post <- lapply(unique(data_ml_post$project), function(cohort) {
+    cohort_idx <- which(data_ml_post$project == cohort)
+    cohort_preds <- eval_post$prediction()$filter(row_ids = cohort_idx)
     list(
-      train_cohort = unique(data_post$project[train_set]),
-      test_cohort = unique(data_post$project[test_set]),
-      ce = eval_post$resample_result(i)$score(msr("classif.ce")),
-      bacc = eval_post$resample_result(i)$score(msr("classif.bacc"))
+      cohort = cohort,
+      ce = cohort_preds$score(msr("classif.ce")),
+      bacc = cohort_preds$score(msr("classif.bacc"))
     )
   })
   
-  # Resultados
-  return(list(ce_pre = result_ce_pre, 
-              ce_post = result_ce_post, 
-              bacc_pre = result_bacc_pre, 
-              bacc_post = result_bacc_post,
-              results_by_fold_pre = results_by_fold_pre,
-              results_by_fold_post = results_by_fold_post))
+  return(list(
+    overall = list(
+      pre = list(ce = result_ce_pre, bacc = result_bacc_pre),
+      post = list(ce = result_ce_post, bacc = result_bacc_post)
+    ),
+    per_cohort = list(
+      pre = results_per_cohort_pre,
+      post = results_per_cohort_post
+    )
+  ))
 }
 
+
 results_svm <- run_ml_pipeline(data_ml_pre, data_ml_post, "svm")
-results_rf <- run_ml_pipeline(data, "rf")
-results_glmn <- run_ml_pipeline(data, "glmn")
+results_rf <- run_ml_pipeline(data_ml_pre, data_ml_post, "rf")
+results_glmn <- run_ml_pipeline(data_ml_pre, data_ml_post, "glmn")
+```
+
+```{r include=TRUE}
+# Resultados globales
+format_resultados_globales <- function(results, model_name) {
+  data.frame(
+    Modelo = c(paste(model_name, "PRE", sep = "_"), paste(model_name, "POST", sep = "_")),
+    Error = c(results$overall$pre$ce, results$overall$post$ce),
+    Precision = c(results$overall$pre$bacc, results$overall$post$bacc)
+  )
+}
+
+# Resultados por cohorte
+format_resultados_cohorte <- function(results, model_name) {
+  cohorts_pre <- do.call(rbind, lapply(results$per_cohort$pre, function(cohort_result) {
+    data.frame(
+      Cohort = cohort_result$cohort,
+      Modelo = paste(model_name, "PRE", sep = "_"),
+      Error = cohort_result$ce,
+      Precision = cohort_result$bacc
+    )
+  }))
+  
+  cohorts_post <- do.call(rbind, lapply(results$per_cohort$post, function(cohort_result) {
+    data.frame(
+      Cohort = cohort_result$cohort,
+      Modelo = paste(model_name, "POST", sep = "_"),
+      Error = cohort_result$ce,
+      Precision = cohort_result$bacc
+    )
+  }))
+  
+  cohorts <- rbind(cohorts_pre, cohorts_post)
+  cohorts <- cohorts[order(cohorts$Cohort), ]
+  
+  return(cohorts)
+}
+
+# Formatear los resultados globales de cada modelo
+resultados_global_svm <- format_resultados_globales(results_svm, "SVM")
+resultados_global_rf <- format_resultados_globales(results_rf, "RandomForest")
+resultados_global_glmn <- format_resultados_globales(results_glmn, "GLMNet")
+
+# Formatear los resultados por cohortes de cada modelo
+resultados_cohorte_svm <- format_resultados_cohorte(results_svm, "SVM")
+resultados_cohorte_rf <- format_resultados_cohorte(results_rf, "RandomForest")
+resultados_cohorte_glmn <- format_resultados_cohorte(results_glmn, "GLMNet")
+
+resultados_global <- rbind(resultados_global_svm, resultados_global_rf, resultados_global_glmn)
+resultados_cohorte <- rbind(resultados_cohorte_svm, resultados_cohorte_rf, resultados_cohorte_glmn)
+
+resultados_global
+resultados_cohorte
 ```
