@@ -21,7 +21,17 @@ library(caret)
 
 ```{r include=TRUE}
 # PRE MOBER 
-physeq_pre <- subset_samples(physeq_agl_combined, sample_data(physeq_output_clr)$status != "adenoma")
+otu_clr_mat <- clrInv(otu_clr)
+class(otu_clr_mat)
+otu_clr_mat <- as.matrix(otu_clr_mat)
+otu_table_clr <- otu_table(otu_clr_mat, taxa_are_rows = TRUE)
+
+physeq_pre_abr <- phyloseq(t(otu_abr), sample_data(physeq_agl_combined))
+physeq_pre_clr <- phyloseq(t(otu_table_clr), sample_data(physeq_agl_combined))
+
+
+
+physeq_pre <- subset_samples(physeq_pre_abr, sample_data(physeq_pre_abr)$status != "adenoma")
 
 otu_table_pre <- t(otu_table(physeq_pre))
 otu_table_pre <- as.matrix(otu_table)
@@ -73,6 +83,14 @@ data_ml_post$project_post <- as.numeric(data_ml_post$project)
 ```{r include=TRUE}
 
 run_ml_pipeline <- function(data_ml_pre, data_ml_post, model) {
+  
+  # Definir las particiones basadas en la columna 'project'
+  f_pre <- as.factor(data_ml_pre$project_pre)
+  f_post <- as.factor(data_ml_post$project_post)
+  
+  # Eliminar la columna project para que ni la uitilice como variable predictora
+  data_ml_pre <- data_ml_pre %>% dplyr::select(-project_pre)
+  data_ml_post <- data_ml_post %>% dplyr::select(-project_post)
 
   # Definición tasks
   if (model == "svm") {
@@ -99,11 +117,6 @@ run_ml_pipeline <- function(data_ml_pre, data_ml_post, model) {
   custom_cv_pre <- rsmp("custom_cv")
   custom_cv_post <- rsmp("custom_cv")
   
-  
-  # Definir las particiones basadas en la columna 'project'
-  f_pre <- as.factor(data_ml_pre$project_pre)
-  f_post <- as.factor(data_ml_post$project_post)
-  
   # Instanciar la validación cruzada personalizada
   custom_cv_pre$instantiate(task_pre, f = f_pre)
   custom_cv_post$instantiate(task_post, f = f_post)
@@ -118,6 +131,10 @@ run_ml_pipeline <- function(data_ml_pre, data_ml_post, model) {
   
   result_ce_post <- eval_post$aggregate(msr("classif.ce"))
   result_bacc_post <- eval_post$aggregate(msr("classif.bacc"))
+  
+   # Añadir de vuelta las columnas project para los resultados por cohorte
+  data_ml_pre$project <- project_pre
+  data_ml_post$project <- project_post
   
   # Resultados por cohorte
   results_per_cohort_pre <- lapply(unique(data_ml_pre$project), function(cohort) {
