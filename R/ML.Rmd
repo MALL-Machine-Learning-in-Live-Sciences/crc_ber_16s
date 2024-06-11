@@ -14,6 +14,13 @@ library(mlr3learners)
 library(mlr3tuning)
 library(mlr3pipelines)
 library(ranger)
+library(tidyr)
+library(dplyr)
+library(viridis)
+library(viridisLite)
+library(ggplot2)
+
+set.seed(1234)
 ```
 
 # Experimento 1 - ML con 15 PCAs y variable a predecir sería la cohorte. CV normal (10fold)
@@ -21,30 +28,33 @@ library(ranger)
 Datos y PCs
 ```{r include=TRUE}
 # Data pre MOBER 
-physeq_ml_clr_pre <- physeq_agl_combined
-physeq_ml_clr_pre
+otu_table_alr <- otu_table(t(alr_datos), taxa_are_rows = TRUE)
+physeq_pre_alr <- phyloseq(otu_table_alr, sample_data(physeq_agl_combined_t))
 
-otu_table_ml_pre <- t(otu_table(physeq_ml_clr_pre))
+physeq_ml_alr_pre <- physeq_pre_alr
+physeq_ml_alr_pre
+
+otu_table_ml_pre <- t(otu_table(physeq_ml_alr_pre))
 pca_result <- prcomp(otu_table_ml_pre, scale. = FALSE)
 pc_scores_pre <- pca_result$x[, 1:15]
 pc_scores_pre <- as.matrix(pc_scores_pre)
 
-data_pre <- sample_data(physeq_ml_clr_pre)
+data_pre <- sample_data(physeq_ml_alr_pre)
 data_pre <- as.data.frame(data_pre)
 
 summary(data_pre$project)
 table(data_pre$project)
 
 # Data post MOBER 
-physeq_ml_clr <- physeq_output_clr
-physeq_ml_clr
+physeq_ml_alr <- physeq_output_alr
+physeq_ml_alr
 
-otu_table_ml <- otu_table(physeq_ml_clr)
+otu_table_ml <- otu_table(physeq_ml_alr)
 pca_result <- prcomp(otu_table_ml, scale. = FALSE)
 pc_scores_post <- pca_result$x[, 1:15]
 pc_scores_post <- as.matrix(pc_scores_post)
 
-data <- sample_data(physeq_ml_clr)
+data <- sample_data(physeq_ml_alr)
 data <- as.data.frame(data)
 
 summary(data$project)
@@ -52,7 +62,7 @@ table(data$project)
 ```
 
 ```{r include=TRUE}
-nombres_cohortes <- unique(sample_data(physeq_ml_clr_pre)$project)
+nombres_cohortes <- unique(sample_data(physeq_ml_alr_pre)$project)
 
 cohortes <- sample_data(physeq_ml_clr_pre)$project
 data_pre <- cbind(pc_scores_pre, cohortes)
@@ -67,7 +77,7 @@ for (col in names(data_pre)) {
 data_pre$cohortes <- as.factor(data_pre$cohortes)
 
 
-nombres_cohortes <- unique(sample_data(physeq_ml_clr)$project)
+nombres_cohortes <- unique(sample_data(physeq_ml_alr)$project)
 
 cohortes <- sample_data(physeq_ml_clr)$project
 data <- cbind(pc_scores_post, cohortes)
@@ -138,9 +148,42 @@ Resultados
 ```{r include=TRUE}
 resultados <- data.frame(
   Modelo = c("SVM_pre", "SVM_post", "RandomForest_pre", "RandomForest_post", "GLMNet_pre", "GLMNet_post"),
+  Phase = c("PRE", "POST", "PRE", "POST", "PRE", "POST"),
   Error = c(results_svm$ce_pre, results_svm$ce_post, results_rf$ce_pre, results_rf$ce_post, results_glmn$ce_pre, results_glmn$ce_post),
-  Precisión = c(results_svm$bacc_pre, results_svm$bacc_post, results_rf$bacc_pre, results_rf$bacc_post, results_glmn$bacc_pre, results_glmn$bacc_post)
+  Precision = c(results_svm$bacc_pre, results_svm$bacc_post, results_rf$bacc_pre, results_rf$bacc_post, results_glmn$bacc_pre, results_glmn$bacc_post)
 )
 
 resultados
 ``` 
+
+```{r include=TRUE}
+resultados$Phase <- ifelse(grepl("_pre", resultados$Modelo), "PRE", "POST")
+resultados$Modelo <- gsub("_pre|_post", "", resultados$Modelo)
+
+resultados_largos_ml <- resultados %>%
+  pivot_longer(cols = c("Error", "Precision"), names_to = "Metric", values_to = "Value")
+
+# Gráfica
+ggplot(resultados_largos_ml, aes(x = Modelo, y = Value, fill = Phase)) +
+  geom_bar(stat = "identity", position = position_dodge(), width = 0.7) +
+  geom_text(aes(label = round(Value, 2)), 
+            position = position_dodge(width = 0.7), 
+            vjust = -0.5, 
+            size = 3) +
+  scale_fill_viridis(discrete = TRUE, option = "viridis") +
+  facet_wrap(~ Metric, scales = "free_y") +
+  labs(title = "Barplot de Error y Precisión por Modelo y Fase",
+       subtitle = "Comparación de modelos antes y después de aplicar MOBER",
+       x = "Modelo", 
+       y = "Valor", 
+       fill = "Fase") +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    plot.title = element_text(hjust = 0.5, size = 14, face = "bold"),
+    plot.subtitle = element_text(hjust = 0.5, size = 12),
+    legend.position = "bottom",
+    legend.title = element_text(size = 10, face = "bold"),
+    legend.text = element_text(size = 9)
+  )
+```

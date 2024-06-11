@@ -11,37 +11,36 @@ knitr::opts_chunk$set(echo = TRUE)
 library(phyloseq)
 library(mlr3)
 library(mlr3learners)
+library(mlr3filters)
 library(mlr3tuning)
 library(mlr3pipelines)
 library(ranger)
 library(caret)
+library(dplyr)
+library(ggplot2)
+
+set.seed(1234)
 ```
 
 # Experimento 2 - Leave cohort out variable Status (CRC/Control)
 
 ```{r include=TRUE}
-# PRE MOBER 
-otu_clr_mat <- clrInv(otu_clr)
-class(otu_clr_mat)
-otu_clr_mat <- as.matrix(otu_clr_mat)
-otu_table_clr <- otu_table(otu_clr_mat, taxa_are_rows = TRUE)
+# projects_filt <- c("PRJEB33634_B1", "Zackular")
+# physeq_pre_filt <- subset_samples(physeq_pre_clr, !(sample_data(physeq_pre_clr)$project %in% projects_filt))
 
-physeq_pre_abr <- phyloseq(t(otu_abr), sample_data(physeq_agl_combined))
-physeq_pre_clr <- phyloseq(t(otu_table_clr), sample_data(physeq_agl_combined))
+# PRE MOBER
+physeq_pre <- physeq_pre_alr
 
-
-
-physeq_pre <- subset_samples(physeq_pre_abr, sample_data(physeq_pre_abr)$status != "adenoma")
-
-otu_table_pre <- t(otu_table(physeq_pre))
-otu_table_pre <- as.matrix(otu_table)
+otu_table_pre <- t(otu_table(physeq_pre, taxa_are_rows = TRUE))
+otu_table_pre <- as.matrix(otu_table_pre)
 status_pre <- sample_data(physeq_pre)$status
 project_pre <- sample_data(physeq_pre)$project
 
 data_ml_pre <- cbind(otu_table_pre, status_pre, project_pre)
 data_ml_pre <- as.data.frame(data_ml_pre)
-data_ml_pre$status_pre <- as.factor(data_ml_pre$status)
-data_ml_pre$project_pre <- as.factor(data_ml_pre$project)
+
+data_ml_pre$status_pre <- as.factor(data_ml_pre$status_pre)
+data_ml_pre$project_pre <- as.factor(data_ml_pre$project_pre)
 
 for (col in names(data_ml_pre)) {
   if (is.character(data_ml_pre[[col]]) || is.factor(data_ml_pre[[col]])) {
@@ -52,19 +51,19 @@ for (col in names(data_ml_pre)) {
 data_ml_pre$status_pre <- as.factor(data_ml_pre$status_pre)
 data_ml_pre$project_pre <- as.numeric(data_ml_pre$project_pre)
 
-
 # POST MOBER
-physeq_post <- subset_samples(physeq_output_clr, sample_data(physeq_output_clr)$status != "adenoma")
+physeq_post <- physeq_output_alr
 
 otu_table_post <- otu_table(physeq_post)
-otu_table_post <- as.matrix(otu_table)
-status_post <- sample_data(physeq_output_clr_filtrado)$status
-project_post <- sample_data(physeq_output_clr_filtrado)$project
+otu_table_post <- as.matrix(otu_table_post)
+status_post <- sample_data(physeq_post)$status
+project_post <- sample_data(physeq_post)$project
 
 data_ml_post <- cbind(otu_table_post, status_post, project_post)
 data_ml_post <- as.data.frame(data_ml_post)
-data_ml_post$status_post <- as.factor(data_ml_post$status)
-data_ml_post$project_post <- as.factor(data_ml_post$project)
+
+data_ml_post$status_post <- as.factor(data_ml_post$status_post)
+data_ml_post$project_post <- as.factor(data_ml_post$project_post)
 
 for (col in names(data_ml_post)) {
   if (is.character(data_ml_post[[col]]) || is.factor(data_ml_post[[col]])) {
@@ -72,12 +71,8 @@ for (col in names(data_ml_post)) {
   }
 }
 
-data_ml_post$status_post <- as.factor(data_ml_post$status)
-data_ml_post$project_post <- as.numeric(data_ml_post$project)
-
-# cancer = 1, normal = 2
-
-# Lo que hay que hacer: leave cohort out es entrenar con 6 cohortes y dejar la 7 para test y así para todas. Por lo tanto, separar data_ml con respecto a las cohortes para tener 6 muestras. La variable que queremos predecir es status (cancer o normal) --> será la que se meta en la task como target. Igual que el experimento anterior pero cambiando el método de resampling para hacerlo con LOCO. 
+data_ml_post$status_post <- as.factor(data_ml_post$status_post)
+data_ml_post$project_post <- as.numeric(data_ml_post$project_post)
 ```
 
 ```{r include=TRUE}
@@ -106,11 +101,14 @@ run_ml_pipeline <- function(data_ml_pre, data_ml_post, model) {
   
   # Modelo de aprendizaje automático
   if (model == "svm") {
-    learner <- lrn("classif.svm")
+    gr = po("filter", filter = flt("kruskal_test"), filter.frac = 0.03) %>>% po("learner", lrn("classif.svm"))
+    learner = GraphLearner$new(gr)
   } else if (model == "rf") {
-    learner <- lrn("classif.ranger")
+    gr = po("filter", filter = flt("kruskal_test"), filter.frac = 0.03) %>>% po("learner", lrn("classif.ranger"))
+    learner = GraphLearner$new(gr)
   } else if (model == "glmn") {
-    learner <- lrn("classif.glmnet")
+    gr = po("filter", filter = flt("kruskal_test"), filter.frac = 0.03) %>>% po("learner", lrn("classif.glmnet"))
+    learner = GraphLearner$new(gr)
   }
   
   # Crear el objeto de validación cruzada personalizada
@@ -132,7 +130,7 @@ run_ml_pipeline <- function(data_ml_pre, data_ml_post, model) {
   result_ce_post <- eval_post$aggregate(msr("classif.ce"))
   result_bacc_post <- eval_post$aggregate(msr("classif.bacc"))
   
-   # Añadir de vuelta las columnas project para los resultados por cohorte
+  # Añadir de vuelta las columnas project para los resultados por cohorte
   data_ml_pre$project <- project_pre
   data_ml_post$project <- project_post
   
@@ -157,18 +155,18 @@ run_ml_pipeline <- function(data_ml_pre, data_ml_post, model) {
     )
   })
   
-  return(list(
-    overall = list(
-      pre = list(ce = result_ce_pre, bacc = result_bacc_pre),
-      post = list(ce = result_ce_post, bacc = result_bacc_post)
-    ),
-    per_cohort = list(
-      pre = results_per_cohort_pre,
-      post = results_per_cohort_post
-    )
-  ))
+    return(list(
+     overall = list(
+       pre = list(ce = result_ce_pre, bacc = result_bacc_pre),
+       post = list(ce = result_ce_post, bacc = result_bacc_post)
+     ),
+     per_cohort = list(
+       pre = results_per_cohort_pre,
+       post = results_per_cohort_post
+     )
+   ))
+  
 }
-
 
 results_svm <- run_ml_pipeline(data_ml_pre, data_ml_post, "svm")
 results_rf <- run_ml_pipeline(data_ml_pre, data_ml_post, "rf")
@@ -190,7 +188,8 @@ format_resultados_cohorte <- function(results, model_name) {
   cohorts_pre <- do.call(rbind, lapply(results$per_cohort$pre, function(cohort_result) {
     data.frame(
       Cohort = cohort_result$cohort,
-      Modelo = paste(model_name, "PRE", sep = "_"),
+      Modelo = model_name,
+      Modelo_fase = paste(model_name, "PRE", sep = "_"),
       Error = cohort_result$ce,
       Precision = cohort_result$bacc
     )
@@ -199,7 +198,8 @@ format_resultados_cohorte <- function(results, model_name) {
   cohorts_post <- do.call(rbind, lapply(results$per_cohort$post, function(cohort_result) {
     data.frame(
       Cohort = cohort_result$cohort,
-      Modelo = paste(model_name, "POST", sep = "_"),
+      Modelo = model_name,
+      Modelo_fase = paste(model_name, "POST", sep = "_"),
       Error = cohort_result$ce,
       Precision = cohort_result$bacc
     )
@@ -226,4 +226,37 @@ resultados_cohorte <- rbind(resultados_cohorte_svm, resultados_cohorte_rf, resul
 
 resultados_global
 resultados_cohorte
+```
+
+```{r include=TRUE}
+# Plots
+resultados_cohorte <- as.data.frame(resultados_cohorte)
+resultados_cohorte$Phase <- ifelse(grepl("PRE", resultados_cohorte$Modelo_fase), "PRE", "POST")
+
+resultados_cohorte_largos <- resultados_cohorte %>%
+  pivot_longer(cols = c(Error, Precision), names_to = "Metric", values_to = "Value")
+
+# Gráfico de Puntos de Error por Cohorte y Modelo
+ggplot(resultados_cohorte_largos %>% filter(Metric == "Error"), aes(x = Cohort, y = Value, color = Modelo, shape = Modelo)) +
+  geom_point(size = 3, position = position_dodge(width = 0.5)) +
+  geom_errorbar(aes(ymin = Value - sd(Value), ymax = Value + sd(Value)), width = 0.2, position = position_dodge(width = 0.5)) +  
+  facet_wrap(~ factor(Phase, levels = c("PRE", "POST")), scales = "free_y") +
+  labs(title = "Error por Cohorte y Modelo",
+       x = "Cohorte", y = "Error", color = "Modelo", shape = "Modelo") +  
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  ylim(0, 0.7)
+
+# Gráfico de Puntos de Precisión por Cohorte y Modelo
+ggplot(resultados_cohorte_largos %>% filter(Metric == "Precision"), aes(x = Cohort, y = Value, color = Modelo, shape = Modelo)) +
+  geom_point(size = 3, position = position_dodge(width = 0.5)) +
+  geom_errorbar(aes(ymin = Value - sd(Value), ymax = Value + sd(Value)), width = 0.2, position = position_dodge(width = 0.5)) +  
+  facet_wrap(~ factor(Phase, levels = c("PRE", "POST")), scales = "free_y") +
+  labs(title = "Precisión por Cohorte y Modelo",
+       x = "Cohorte", y = "Precision", color = "Modelo", shape = "Modelo") +  
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  ylim(0.5, 1)
+
+
 ```

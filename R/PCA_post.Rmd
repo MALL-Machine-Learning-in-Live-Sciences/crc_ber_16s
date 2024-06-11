@@ -10,6 +10,8 @@ output: html_document
 library(phyloseq)
 library(dplyr)
 library(tidyr)
+
+set.seed(1234)
 ```
 
 Creamos el objeto phyloseq con el que crearemos la PCA a partir del output .h5ad que genera hacer proyección con MOBER 
@@ -18,8 +20,8 @@ Creamos el objeto phyloseq con el que crearemos la PCA a partir del output .h5ad
 # Especifica la ruta al directorio que contiene los archivos CSV
 csv_directory <- "C:/Users/Carla/Desktop/4o/Q1/TFG/samples/output/"
 
-otu_file <- list.files(path = csv_directory, pattern = "otu_table_alr.csv", full.names = TRUE)
-sample_file <- list.files(path = csv_directory, pattern = "sample_data_alr.csv", full.names = TRUE)
+otu_file <- list.files(path = csv_directory, pattern = "otu_table_abr.csv", full.names = TRUE)
+sample_file <- list.files(path = csv_directory, pattern = "sample_data_abr.csv", full.names = TRUE)
 
 otu <- read.csv(otu_file, row.names = 1)
 sample_data <- read.csv(sample_file, row.names = 1)
@@ -28,8 +30,8 @@ otu_table <- otu_table(otu, taxa_are_rows = FALSE)
 sample_data <- sample_data(sample_data)
 
 # Crear objeto phyloseq
-physeq_output_alr <- phyloseq(otu_table, sample_data)
-physeq_output_alr
+physeq_output_abr <- phyloseq(otu_table, sample_data)
+physeq_output_abr
 ```
 
 Representamos PCA
@@ -50,9 +52,9 @@ plot_pca_post <- PLSDAbatch::Scatter_Density(object = pca_post,
                                                trt = meta_post[,"status"],
                                                batch.legend.title = 'Project',
                                                trt.legend.title = 'Status',
-                                               title = 'With correction',
-                                               xlim = c(-2000, 1000), 
-                                               ylim = c(-2500, 2500))
+                                               title = 'Con corrección',
+                                               xlim = c(-3000, 1000), 
+                                               ylim = c(-1250, 500))
 ```
 CLR 
 
@@ -74,9 +76,9 @@ plot_pca_post_clr <- PLSDAbatch::Scatter_Density(object = pca_post_clr,
                                                trt = meta_out_clr[,"status"],
                                                batch.legend.title = 'Project',
                                                trt.legend.title = 'Status',
-                                               title = 'With correction',
-                                               xlim = c(-20, 20), 
-                                               ylim = c(-20, 20))
+                                               title = 'Con corrección',
+                                               xlim = c(-10, 10), 
+                                               ylim = c(-10, 10))
 ```
 
 ALR 
@@ -94,14 +96,14 @@ cols <- c("project", "status")
 meta_out_alr[,cols] <- lapply(meta_out_alr[,cols], as.factor)
 
 pca_post_alr <- pca(X = otu_post_alr, ncomp = 2)
-plot_pca_post_clr <- PLSDAbatch::Scatter_Density(object = pca_post_alr,
+plot_pca_post_alr <- PLSDAbatch::Scatter_Density(object = pca_post_alr,
                                                batch = meta_out_alr[,"project"],
                                                trt = meta_out_alr[,"status"],
                                                batch.legend.title = 'Project',
                                                trt.legend.title = 'Status',
-                                               title = 'With correction',
-                                               xlim = c(-20, 20), 
-                                               ylim = c(-20, 20))
+                                               title = 'Con corrección',
+                                               xlim = c(-12, 12), 
+                                               ylim = c(-12, 12))
 ```
 
 Abundancias relativas 
@@ -124,7 +126,7 @@ plot_pca_post_abr <- PLSDAbatch::Scatter_Density(object = pca_post_abr,
                                                trt = meta_out_abr[,"status"],
                                                batch.legend.title = 'Project',
                                                trt.legend.title = 'Status',
-                                               title = 'With correction',
-                                               xlim = c(-0.2, 0.2), 
-                                               ylim = c(-0.2, 0.2))
+                                               title = 'Con corrección',
+                                               xlim = c(-3000, 1000), 
+                                               ylim = c(-1250, 500))
 ```

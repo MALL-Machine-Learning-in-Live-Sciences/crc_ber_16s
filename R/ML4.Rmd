@@ -1,0 +1,136 @@
+---
+title: "ML4"
+author: "Carla"
+date: "2024-06-03"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(phyloseq)
+library(mlr3)
+library(mlr3learners)
+library(mlr3filters)
+library(mlr3tuning)
+library(mlr3pipelines)
+library(ranger)
+library(caret)
+library(dplyr)
+
+set.seed(1234)
+```
+
+```{r include=TRUE}
+run_ml_pipeline <- function(data_ml_pre, data_ml_post, model) {
+  
+  # Eliminar la columna project para que ni la uitilice como variable predictora
+  data_ml_pre <- data_ml_pre %>% dplyr::select(-project_pre)
+  data_ml_post <- data_ml_post %>% dplyr::select(-project_post)
+
+  # Definición tasks
+  if (model == "svm") {
+    task_pre <- TaskClassif$new(id = "ml2_svm", backend = data_ml_pre, target = "status_pre")
+    task_post <- TaskClassif$new(id = "ml2_svm_post", backend = data_ml_post, target = "status_post")
+  } else if (model == "rf") {
+    task_pre <- TaskClassif$new(id = "ml2_rf", backend = data_ml_pre, target = "status_pre")
+    task_post <- TaskClassif$new(id = "ml2_rf_post", backend = data_ml_post, target = "status_post")
+  } else if (model == "glmn") {
+    task_pre <- TaskClassif$new(id = "ml2_glmn", backend = data_ml_pre, target = "status_pre")
+    task_post <- TaskClassif$new(id = "ml2_glmn_post", backend = data_ml_post, target = "status_post")
+  }
+  
+  # Modelo de aprendizaje automático
+  if (model == "svm") {
+    gr = po("filter", filter = flt("kruskal_test"), filter.frac = 0.03) %>>% po("learner", lrn("classif.svm"))
+    learner = GraphLearner$new(gr)
+  } else if (model == "rf") {
+    gr = po("filter", filter = flt("kruskal_test"), filter.frac = 0.03) %>>% po("learner", lrn("classif.ranger"))
+    learner = GraphLearner$new(gr)
+  } else if (model == "glmn") {
+    gr = po("filter", filter = flt("kruskal_test"), filter.frac = 0.03) %>>% po("learner", lrn("classif.glmnet"))
+    learner = GraphLearner$new(gr)
+  }
+  
+  resampling <- rsmp("cv", folds = 10)
+  
+  # Proceso de evaluación
+  eval_pre <- mlr3::resample(task = task_pre, learner = learner, resampling = resampling)
+  eval_post <- mlr3::resample(task = task_post, learner = learner, resampling = resampling)
+  
+  # Obtención métricas
+  result_ce_pre <- eval_pre$aggregate(msr("classif.ce"))
+  result_bacc_pre <- eval_pre$aggregate(msr("classif.bacc"))
+  
+  result_ce_post <- eval_post$aggregate(msr("classif.ce"))
+  result_bacc_post <- eval_post$aggregate(msr("classif.bacc"))
+  
+  # Añadir de vuelta las columnas project para los resultados por cohorte
+  data_ml_pre$project <- project_pre
+  data_ml_post$project <- project_post
+  
+    return(list(
+     overall = list(
+       pre = list(ce = result_ce_pre, bacc = result_bacc_pre),
+       post = list(ce = result_ce_post, bacc = result_bacc_post)
+     )
+   ))
+}
+
+results_svm <- run_ml_pipeline(data_ml_pre, data_ml_post, "svm")
+results_rf <- run_ml_pipeline(data_ml_pre, data_ml_post, "rf")
+results_glmn <- run_ml_pipeline(data_ml_pre, data_ml_post, "glmn")
+```
+
+```{r include=TRUE}
+# Resultados globales de cada modelo
+format_resultados_cv <- function(results, model_name) {
+  data.frame(
+    Modelo = c(paste(model_name, "PRE", sep = "_"), paste(model_name, "POST", sep = "_")),
+    Error = c(results$overall$pre$ce, results$overall$post$ce),
+    Precision = c(results$overall$pre$bacc, results$overall$post$bacc)
+  )
+}
+
+resultados_cv_svm <- format_resultados_cv(results_svm, "SVM")
+resultados_cv_rf <- format_resultados_cv(results_rf, "RandomForest")
+resultados_cv_glmn <- format_resultados_cv(results_glmn, "GLMNet")
+
+resultados_cvnormal <- rbind(resultados_cv_svm, resultados_cv_rf, resultados_cv_glmn)
+resultados_cvnormal
+```
+
+```{r include=TRUE}
+resultados_cvnormal$Phase <- ifelse(grepl("PRE", resultados_cvnormal$Modelo), "PRE", "POST")
+resultados_cvnormal$Modelo <- gsub("_PRE|_POST", "", resultados_cvnormal$Modelo)
+
+# Gráfico de Error por Modelo y Fase
+plot_error <- ggplot(resultados_cvnormal, aes(x = Modelo, y = Error, fill = Phase)) +
+  geom_bar(stat = "identity", position = position_dodge()) +
+  scale_fill_viridis_d() +
+  ylim(0, 0.35) +
+  labs(title = "Error por Modelo y Fase", x = "Modelo", y = "Error") +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    plot.title = element_text(size = 14, face = "bold"),
+    axis.title = element_text(size = 12)
+  )
+
+# Gráfico de Precisión por Modelo y Fase
+plot_precision <- ggplot(resultados_cvnormal, aes(x = Modelo, y = Precision, fill = Phase)) +
+  geom_bar(stat = "identity", position = position_dodge()) +
+  scale_fill_viridis_d() +
+  ylim(0, 0.75) +
+  labs(title = "Precisión por Modelo y Fase", x = "Modelo", y = "Precisión") +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    plot.title = element_text(size = 14, face = "bold"),
+    axis.title = element_text(size = 12)
+  )
+
+# Combinando ambas gráficas en una sola con patchwork
+combined_plot_2 <- plot_error / plot_precision
+combined_plot_2
+```

@@ -18,23 +18,38 @@ library(PLSDAbatch) # gráficos PCA
 library(mixOmics) # normalización CLR 
 library(compositions) # normalización ALR
 library(ampvis2) # normalización abundancias relativas 
+
+set.seed(1234)
 ```
 
 Convertimos la lista de objetos phyloseq en un sólo objeto 
 
 ```{r include=TRUE}
-physeq_agl_combined <- do.call("merge_phyloseq", physeq_agl_list_filtrado)
-physeq_agl_combined
+tax_tables <- lapply(physeq_agl_list_filtrado, tax_table)
+unified_taxa <- Reduce(function(x, y) unique(rbind(x, y)), tax_tables)
+
+for (i in 1:length(physeq_agl_list_filtrado)) {
+  tax_table(physeq_agl_list_filtrado[[i]]) <- unified_taxa
+}
+
+physeq_agl_combined_t <- do.call("merge_phyloseq", physeq_agl_list_filtrado)
+physeq_agl_combined_t
+
+physeq_agl_combined_t <- subset_samples(physeq_agl_combined_t, sample_data(physeq_agl_combined_t)$status != "adenoma")
+
+projects_filt <- c("PRJEB33634_B1", "Zackular")
+physeq_agl_combined_filt <- subset_samples(physeq_agl_combined_t, !(sample_data(physeq_agl_combined_t)$project %in% projects_filt))
+
 ```
 
 PCA antes de normalizar 
 
 ```{r include=TRUE}
-otu_table <- otu_table(physeq_agl_combined)
+otu_table <- otu_table(physeq_agl_combined_t)
 otu <- t(otu_table)
 otu <- as.matrix(otu)
 
-metadata <- sample_data(physeq_agl_combined)
+metadata <- sample_data(physeq_agl_combined_t)
 meta <- as.matrix(metadata)
 meta <- as.data.frame(meta)
 
@@ -48,9 +63,9 @@ plot_pca_before <- PLSDAbatch::Scatter_Density(object = pca_before,
                                                trt = meta[,"status"],
                                                batch.legend.title = 'Project',
                                                trt.legend.title = 'Status',
-                                               title = 'Without correction',
-                                               xlim = c(0, 75000), 
-                                               ylim = c(-50000, 50000))
+                                               title = 'Sin corrección',
+                                               xlim = c(0, 12000), 
+                                               ylim = c(-20000, 8000))
 ```
 Normalización CLR 
 
@@ -67,9 +82,9 @@ plot_pca_before_clr <- PLSDAbatch::Scatter_Density(object = pca_before_clr,
                                                trt = meta[,"status"],
                                                batch.legend.title = 'Project',
                                                trt.legend.title = 'Status',
-                                               title = 'Without correction',
-                                               xlim = c(-25, 25), 
-                                               ylim = c(-50, 10))
+                                               title = 'Sin corrección',
+                                               xlim = c(-20, 20), 
+                                               ylim = c(-20, 10))
 ```
 Normalización ALR 
 
@@ -83,9 +98,9 @@ plot_pca_before_alr <- PLSDAbatch::Scatter_Density(object = pca_before_alr,
                                                trt = meta[,"status"],
                                                batch.legend.title = 'Project',
                                                trt.legend.title = 'Status',
-                                               title = 'Without correction',
-                                               xlim = c(-25, 25), 
-                                               ylim = c(-50, 10))
+                                               title = 'Sin corrección',
+                                               xlim = c(-20, 20), 
+                                               ylim = c(-20, 10))
 ```
 Normalización por abundancias relativas 
 ```{r include=TRUE}
@@ -99,21 +114,21 @@ plot_pca_before_abr <- PLSDAbatch::Scatter_Density(object = pca_before_abr,
                                                trt = meta[,"status"],
                                                batch.legend.title = 'Project',
                                                trt.legend.title = 'Status',
-                                               title = 'Without correction',
-                                               xlim = c(-0.3, 0.3), 
-                                               ylim = c(-0.3, 0.3))
+                                               title = 'Sin corrección',
+                                               xlim = c(-2500, 7000), 
+                                               ylim = c(-5000, 5000))
 ```
 
 ```{r include=TRUE}
-otu_table <- t(otu_abr)
-sample_data <- sample_data(physeq_agl_combined)
+otu_table <- t(otu_clr)
+sample_data <- sample_data(physeq_agl_combined_t)
 
 # Especificar la carpeta donde se guardarán los archivos CSV
 save_folder <- "C:/Users/Carla/Desktop/4o/Q1/TFG/samples"
 
 # Guardar otu_table en un archivo CSV
-write.csv(otu_table, file.path(save_folder, "otu_table_alr.csv"), row.names = TRUE)
+write.csv(otu_table, file.path(save_folder, "otu_table_clr.csv"), row.names = TRUE)
 
 # Guardar sample_data en un archivo CSV
-write.csv(data.frame(sample_data), file.path(save_folder, "sample_data_alr.csv"), row.names = TRUE)
+write.csv(data.frame(sample_data), file.path(save_folder, "sample_data_clr.csv"), row.names = TRUE)
 ```

@@ -217,6 +217,14 @@ physeq_agl_list_filtrado <- lapply(physeq_agl_list, function(x) {
 
 generos_comunes
 physeq_agl_list_filtrado
+
+rename_taxas <- function(agg_physeq, rank_name) {
+  renames <- make.names(as.character(tax_table(agg_physeq)[, rank_name]))
+  taxa_names(agg_physeq) <- renames
+  return(agg_physeq)
+}
+physeq_agl_list_filtrado <- lapply(physeq_agl_list_filtrado, rename_taxas, "fam_gen")
+physeq_agl_list_filtrado
 ```
 
 Hay 175 géneros comunes entre las distintas cohortes

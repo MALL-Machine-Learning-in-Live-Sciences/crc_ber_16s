@@ -1,0 +1,158 @@
+---
+title: "ML3"
+author: "Carla"
+date: "2024-06-03"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(phyloseq)
+library(mlr3)
+library(mlr3learners)
+library(mlr3tuning)
+library(mlr3pipelines)
+library(mlr3verse)
+library(ranger)
+library(dplyr)
+library(ggplot2)
+library(patchwork)
+
+set.seed(1234)
+```
+
+# Experimento 1 - ML con 15 PCAs y variable a predecir sería la cohorte. CV normal (10fold)
+
+Datos y PCs
+```{r include=TRUE}
+subgrupos_pre <- split(data_ml_pre, data_ml_pre$project_pre)
+
+determine_folds <- function(data) {
+  min_samples <- min(table(data$status))
+  folds <- ifelse(min_samples < 10, min_samples, 10)
+  return(folds)
+}
+
+# Número de folds para cada subgrupo
+folds_pre <- sapply(subgrupos_pre, determine_folds)
+
+# Número de muestras de cada subgrupo
+num_muestras_subgrupos <- lapply(subgrupos_pre, nrow)
+num_muestras_subgrupos_df <- data.frame(
+  Project = names(num_muestras_subgrupos),
+  Num_Muestras = unlist(num_muestras_subgrupos)
+)
+print(num_muestras_subgrupos_df)
+```
+
+```{r include=TRUE}
+run_ml_pipeline <- function(subgrupos_pre, model) {
+  
+  # Definición tasks
+  if (model == "svm") {
+    task <- TaskClassif$new(id = "ml3_svm", backend = subgrupos_pre, target = "status_pre")
+  } else if (model == "rf") {
+    task <- TaskClassif$new(id = "ml3_rf", backend = subgrupos_pre, target = "status_pre")
+  } else if (model == "glmn") {
+    task <- TaskClassif$new(id = "ml3_rf", backend = subgrupos_pre, target = "status_pre")
+  } else {
+    stop("Modelo no válido")
+  }
+  
+  # Modelo de aprendizaje automático
+  if (model == "svm") {
+    learner <- lrn("classif.svm")
+  } else if (model == "rf") {
+    learner <- lrn("classif.ranger")
+  } else if (model == "glmn") {
+    learner <- lrn("classif.glmnet")
+  }
+  
+  # Estrategia de remuestreo (10-fold cross-validation)
+  resampling <- rsmp("cv", folds = 10)
+  
+  # Proceso de evaluación
+  eval_pre <- mlr3::resample(task = task, learner = learner, resampling = resampling)
+  
+  # Obtención métricas
+  result_ce_pre <- eval_pre$aggregate(measures = msr("classif.ce"))
+  result_bacc_pre <- eval_pre$aggregate(measures = msr("classif.bacc"))
+  
+  # Resultados
+  return(list(ce_pre = result_ce_pre, 
+              bacc_pre = result_bacc_pre))
+}
+
+results <- list()
+
+for (cohort in 1:7) {
+  results[[paste0("cohort", cohort)]] <- list(
+    svm = run_ml_pipeline(subgrupos_pre[[as.character(cohort)]], "svm"),
+    rf = run_ml_pipeline(subgrupos_pre[[as.character(cohort)]], "rf"),
+    glmn = run_ml_pipeline(subgrupos_pre[[as.character(cohort)]], "glmn")
+  )
+}
+```
+
+```{r include=TRUE}
+resultados_totales <- data.frame(Modelo = character(), Cohorte = character(), Error = numeric(), Precision = numeric(), stringsAsFactors = FALSE)
+
+for (cohort in 1:7) {
+  results_cohorte <- results[[paste0("cohort", cohort)]]
+  
+  for (modelo in c("svm", "rf", "glmn")) {
+    result_modelo <- results_cohorte[[modelo]]
+    
+    resultados_totales <- rbind(resultados_totales, data.frame(
+      Modelo = paste0(modelo, "_pre"),
+      Cohorte = paste0("cohort", cohort),
+      Error = result_modelo$ce_pre,
+      Precision = result_modelo$bacc_pre
+    ))
+  }
+}
+
+print(resultados_totales)
+```
+
+```{r include=TRUE}
+resultados_totales <- as.data.frame(resultados_totales)
+
+nuevos_nombres <- c("PRJEB33634_B1", "PRJEB33634_B2", "PRJEB33634_B3", "PRJEB6070_F", "PRJNA290926", "PRJNA763023_H", "Zackular")
+indices <- c(1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4, 5, 5, 5, 6, 6, 6, 7, 7, 7)
+resultados_totales$Cohorte <- nuevos_nombres[indices]
+resultados_totales$Phase <- ifelse(grepl("pre", resultados_totales$Modelo, ignore.case = TRUE), "PRE", "POST")
+
+color_palette <- c("#A6CEE3", "#1F78B4", "#B2DF8A", "#33A02C", "#FB9A99", "#E31A1C", "#FDBF6F")
+
+# Boxplot para Error
+boxplot_error <- ggplot(resultados_totales, aes(x = Cohorte, y = Error, fill = Cohorte)) +
+  geom_boxplot() +
+  labs(title = "Error por Cohorte",
+       x = "Cohorte", y = "Error") +
+  scale_fill_manual(values = color_palette) +
+  theme_minimal() +
+  theme(
+    legend.position = "none", 
+    plot.title = element_text(size = 14, face = "bold"),
+    axis.title = element_text(size = 12),
+    axis.text.x = element_text(angle = 45, hjust = 1)
+  )
+
+# Boxplot para Precisión
+boxplot_precision <- ggplot(resultados_totales, aes(x = Cohorte, y = Precision, fill = Cohorte)) +
+  geom_boxplot() +
+  labs(title = "Precisión por Cohorte",
+       x = "Cohorte", y = "Precisión") +
+  scale_fill_manual(values = color_palette) +
+  theme_minimal() +
+  theme(  
+    plot.title = element_text(size = 14, face = "bold"),
+    axis.title = element_text(size = 12),
+    axis.text.x = element_text(angle = 45, hjust = 1)
+  )
+
+combined_plot <- boxplot_error / boxplot_precision
+combined_plot
+```
