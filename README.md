@@ -125,7 +125,7 @@ mober projection
 ```
 En este caso:
 - La dirección del modelo es la definida por defecto hacia donde se encuentran los modelos comentados en el anterior apartado.
-- onto es un valor entre 1 y 7 (es decir, una de nuestras cohortes) sobre el que las muestras serán proyectadas.
+- onto: una de nuestras cohortes sobre la que las muestras serán proyectadas.
 - El fichero sobre el que haremos proyección será el utilizado para el entrenamiento, en nuestro caso microbiome_data.h5ad.
 - El output es un nuevo fichero .h5ad, que contendrá los valores proyectados, y con los que trabajaremos en próximmos pasos.
 - decimals representa al número de decimales para el fichero generado como output. Valor 4 por defecto.
@@ -202,5 +202,3 @@ Y entramos en ella:
 $ sudo singularity shell --writable DIRNAME/ 
 ```
 Ya podríamos empezar a trabjar con nuestra herramienta dentr de nuestro contenedor Singularity.
-
-### Ejemplo de uso
