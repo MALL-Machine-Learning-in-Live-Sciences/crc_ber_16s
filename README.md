@@ -221,3 +221,56 @@ singularity run mober_container.sif mober projection \
 --decimals 4
 ```
 
+## Estructura del repositorio
+
+En este apartado se detalla el contenido y la utilidad de cada una de las carpetas presentes en este repositorio:
+- data
+- mober
+- python 
+- sing 
+
+Cada una de estas carpetas contiene una serie de ficheros específicos que cumplen con distintas funciones dentro del proyecto.
+
+### data 
+
+- Contiene todos los datos utilizados a lo largo del desarrollo del proyecto. Esta carpeta está organizada en varias subcarpetas:
+  - cohortes: Aquí se encuentran las cohortes utilizadas una vez preprocesadas, almacenadas en formato .rds.
+  - samples: Contiene todos los archivos CSV utilizados en este proyecto. Dentro de esta subcarpeta se encuentran:
+    - input: Archivos CSV creados para la construcción del archivo de entrada de MOBER.
+    - output: Archivos CSV generados a partir del archivo de salida de MOBER.
+
+### mober 
+
+Submódulo MOBER clonado del repositorio de GitHub de MOBER. Esta carpeta contiene todos los archivos y scripts necesarios para la ejecución y funcionamiento del software MOBER.
+
+### python 
+
+En la carpeta python se encuentran los archivos de código desarrollados para el proyecto en Python. Estos archivos son:
+
+- objeto_h5ad_input.py: Script para la creación de los objetos de entrada a MOBER a partir de los archivos CSV exportados de R.
+- transformacion_h5ad_output.py: Script para la creación de los archivos CSV de importación a R a partir del archivo .h5ad de salida de MOBER.
+- estudio_h5ad.py: Script para el estudio y análisis del contenido de cada archivo .h5ad.
+
+Además de estos archivos, a nivel de la carpeta python se encuentra una subcarpeta data con las siguientes subcarpetas:
+
+- input: Contiene los archivos .h5ad generados para utilizar como entrada de MOBER.
+- output: Contiene los archivos .h5ad obtenidos como salida de MOBER.
+
+### R 
+
+La carpeta R contiene los archivos de código desarrollados en R para el desarrollo del proyecto. Estos archivos incluyen:
+
+- muestras_preproc.Rmd: Script para el procesamiento de las cohortes iniciales.
+- PCA_pre.Rmd: Cálculo de diferentes PCA (Análisis de Componentes Principales) con los datos previos a MOBER.
+- PCA_post.Rmd: Cálculo de diferentes PCA con los datos posteriores a MOBER.
+- ML.Rmd: Desarrollo del primer experimento de machine learning utilizando 15 PCAs y validación cruzada estándar (10-fold) para predecir la variable "cohorte".
+- ML2.Rmd: Desarrollo del segundo experimento de machine learning utilizando validación cruzada Leave Cohort Out con todas las cohortes para predecir la variable "Status" (cáncer/normal).
+- ML3.Rmd: Desarrollo del tercer experimento de machine learning utilizando validación cruzada individual sobre las cohortes para predecir la variable "Status" (cáncer/normal).
+- ML4.Rmd: Desarrollo del cuarto experimento de machine learning utilizando validación cruzada estándar (10-fold) con todas las cohortes para predecir la variable "Status" (cáncer/normal).
+
+### sing
+
+La carpeta sing contiene todo lo necesario para la creación y ejecución del contenedor de Singularity. Incluye varias subcarpetas con los datos, métricas y demás recursos necesarios, además de dos archivos de texto:
+
+- comandos.txt: Archivo que contiene los comandos necesarios para la creación y ejecución de la herramienta.
+- mober_container.def: Archivo con el "recipe" desarrollado para la creación del contenedor.
