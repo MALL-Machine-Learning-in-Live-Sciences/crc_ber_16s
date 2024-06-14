@@ -1,0 +1,246 @@
+---
+title: "TFG"
+author: "Carla"
+date: "2023-12-26"
+output: html_document
+---
+
+Librerías necesarias 
+
+```{r include=FALSE}
+library(phyloseq)
+library(anndata)
+```
+
+Vamos a trabajar con 10 muestras (10 cohortes preprocesadas) de microbioma.
+
+Estas cohortes de microbioba representan grupos de individuos que comparten características similares y que son estudiados en relación con la composición y función de sus microbiomas. El microbioma se refiere al conjunto de microorganismos, como bacterias, virus, hongos y otros microbios, que colonizan un ambiente específico, como el cuerpo humano.
+
+Cuando hablamos de este concepto y en este contexto, nos referimos a grupos de personas que comparten ciertas características, y nuestro objetivo es analizarlas para intentar comprender la relación entre ellas y las comunidades microbianas presentes en sus cuerpos.
+
+
+```{r include=TRUE}
+# Rutas a nuestros archivos 
+
+file_paths <- c("C:/Users/Carla/Desktop/4o/Q1/TFG/cohortes/PRJEB6070_F_ps.rds",
+                "C:/Users/Carla/Desktop/4o/Q1/TFG/cohortes/PRJEB6070_G_ps.rds",
+                "C:/Users/Carla/Desktop/4o/Q1/TFG/cohortes/PRJEB33634_B1_ps.rds",
+                "C:/Users/Carla/Desktop/4o/Q1/TFG/cohortes/PRJEB33634_B2_ps.rds",
+                "C:/Users/Carla/Desktop/4o/Q1/TFG/cohortes/PRJEB33634_B3_ps.rds",
+                "C:/Users/Carla/Desktop/4o/Q1/TFG/cohortes/PRJNA67873_ps.rds",
+                "C:/Users/Carla/Desktop/4o/Q1/TFG/cohortes/PRJNA290926_ps.rds",
+                "C:/Users/Carla/Desktop/4o/Q1/TFG/cohortes/PRJNA318004_ps.rds",
+                "C:/Users/Carla/Desktop/4o/Q1/TFG/cohortes/PRJNA763023_H_ps.rds",
+                "C:/Users/Carla/Desktop/4o/Q1/TFG/cohortes/Zackular_ps.rds")
+```
+
+Creamos una función para cargar nuestros datos y crear nuestros objetos phyloseq. 
+
+El objeto phyloseq se crea para facilitar el trabajo con este tipo de datos. Estos objetos están compuestos de cuatro componentes que almacenan las cuentas de lecturas, los metadatos, la taxonomía y el árbol filogenético.
+
+OTU (Operational Taxonomic Unit) es una unidad utilizada en el análisis de datos de secuenciación de amplicones de ADN para representar grupos de secuencias genéticas similares.
+
+"ASV" generalmente se refiere a "Amplicon Sequence Variant", que es una unidad similar a una OTU (Operational Taxonomic Unit). Cada "ASV" podría representar una secuencia única de amplicón, lo que reflejaría la diversidad microbiana en las muestras.
+
+- otu_table (matriz) -> Representa la abundancia relativa de cada OTU en cada muestra. Suele ser una tabla de datos con muestras en filas y OTUs en columnas. 
+
+- sample_data (matriz) -> Incluye información sobre las muestras, como condiciones experimentales, variables ambientales, información de tiempo, etc.
+
+- tax_table (data frame) -> Proporciona información sobre la taxonomía de las OTUs, es decir, a qué categoría taxonómica pertenece cada OTU (por ejemplo, filo, clase, orden, familia, género, especie).
+
+
+```{r include=TRUE}
+# Definir una función para cargar datos y crear objetos phyloseq
+load_phyloseq <- function(file_path) {
+  cohort <- readRDS(file_path)
+  physeq <- phyloseq(otu_table(cohort),
+                     tax_table(cohort),
+                     sample_data(cohort))
+  return(physeq)
+}
+
+# Aplicamos la función a nuestros datos y creamos una lista de objetos phyloseq
+physeq_list <- lapply(file_paths, load_phyloseq)
+```
+
+Una vez tenemos nuestros objetos phyloseq, habrá que seguir los siguientes pasos para completar el preprocesado:
+
+### 1. Filtrar y almacenar sólo las cohortes con muestras de tipo "feces"
+
+Esto se hace debido a que se debe estudiar un sólo tipo de tejido para ver las relaciones reales entre las muestras.
+
+```{r include=TRUE}
+# Crear una lista para almacenar los objetos phyloseq filtrados
+filtered_physeq_list <- list()
+
+# Bucle para filtrar y almacenar solo las cohortes con muestras de tipo "feces"
+for (i in seq_along(physeq_list)) {
+  sample_data_i <- sample_data(physeq_list[[i]])
+  
+  if ("feces" %in% sample_data_i$sample_type) {
+    filtered_physeq_list[[i]] <- subset_samples(physeq_list[[i]], sample_type == "feces")
+  } else {
+    cat("No hay muestras de tipo 'feces' en la Cohorte", i, "\n")
+  }
+}
+
+# Nos dice en qué cohortes hay muestras de feces, que será con las que trabajemos
+cohort_numbers_with_feces <- which(!sapply(filtered_physeq_list, is.null))
+cohort_numbers_with_feces
+
+physeq_list_feces <- filtered_physeq_list[cohort_numbers_with_feces]
+physeq_list_feces
+```
+
+Una vez hecho esto se eliminan las cohortes 2, 6 y 8 al no contener muestras de heces. De aquí en adelante trabajaremos con las 7 cohortes restantes.
+
+Tenemos (ej 1) 7526 taxas de 129 muestras, 21 variables y 7 ranks taxonómicos
+
+2. Aglomerar por el campo Genus (agrupación o sumarización de datos a nivel de género microbiológico)
+
+En las tablas de taxonomía (cómo se dijo antes) tenemos diferentes clasificaciones en cada OTU. Vamos a realizar una aglomeración por género. 
+
+```{r include=TRUE}
+# Vemos que en tax_table hay dierentes géneros, por ahí hay que aglomerar 
+physeq_agl_list <- list()
+# Seleccionar el nivel taxonómico a aglomerar (en este caso, "Genus")
+taxonomic_level <- "Genus"
+
+for (i in seq_along(physeq_list_feces)) {
+  physeq_aglomerado <- tax_glom(physeq_list_feces[[i]], taxonomic_level)
+  physeq_agl_list[[i]] <- physeq_aglomerado
+}
+
+physeq_agl_list
+```
+Tenemos (ej 1) 428 taxas de 129 muestras, 21 variables y 7 ranks taxonómicos
+
+3. Eliminar géneros sin identificar 
+
+Eliminamos los géneros NA
+
+```{r include=TRUE}
+# Comprobamos si hay valores NA en el género (géneros sin identificar)
+
+for (i in seq_along(physeq_agl_list)) {
+  
+
+  tax_table_actual <- as.data.frame(tax_table(physeq_agl_list[[i]]))
+  
+
+  n_missing <- sum(is.na(tax_table_actual$Genus))
+  
+  if (n_missing > 0) {
+    cat("En el physeq", i, "hay", n_missing, "valores faltantes en la columna 'Genus'.\n")
+  } else {
+    cat("En el physeq", i, "no hay valores faltantes en la columna 'Genus'.\n")
+  }
+}
+
+# En caso de que hubiera NAs se haría lo siguiente
+# Seleccionar el nivel taxonómico a mantener (en este caso, "Genus")
+taxonomic_level <- "Genus"
+
+physeq_agl_list_sin_NA <- list()
+
+# Bucle para eliminar los géneros no identificados de cada objeto phyloseq en physeq_agl_list
+for (i in seq_along(physeq_agl_list)) {
+  # Copiar el objeto phyloseq original
+  physeq_agl_sin_NA <- physeq_agl_list[[i]]
+  
+  # Obtener la tabla de taxonomía
+  tax_table_agl <- tax_table(physeq_agl_sin_NA)
+  
+  # Identificar los géneros no identificados
+  generos_no_identificados <- rownames(tax_table_agl)[is.na(tax_table_agl[, taxonomic_level])]
+  
+  # Eliminar los géneros no identificados de la tabla de taxonomía
+  tax_table_agl_filtrada <- tax_table_agl[!(rownames(tax_table_agl) %in% generos_no_identificados), ]
+  
+  # Aplicar los cambios a physeq_agl_sin_NA
+  tax_table(physeq_agl_sin_NA) <- tax_table_agl_filtrada
+  
+  # Agregar el objeto phyloseq modificado a la nueva lista
+  physeq_agl_list_sin_NA[[i]] <- physeq_agl_sin_NA
+} 
+
+# Este objeto es igual a physeq_alg_list (usamos el que sea indistintamente)
+physeq_agl_list_sin_NA 
+```
+Tenemos (ej 1) 428 taxas de 129 muestras, 21 variables y 7 ranks taxonómicos
+
+4. Identificar y filtrar por géneros comunes entre todos las cohortes
+
+Creamos un nuevo campo llamado fam_gen que sea una combinación de los campos Family y Genus, separados por '_', con el objetivo de aglomerar posteriormente por este campo, sin encontrarnos discrepancias debido a los géneros que tienen el mismo Genus pero pertenecen a distinta familia.
+
+```{r include=TRUE}
+for (i in seq_along(physeq_agl_list)) {
+  family <- tax_table(physeq_agl_list[[i]])[, "Family"]
+  genus <- tax_table(physeq_agl_list[[i]])[, "Genus"]
+  
+  # Crear el campo fam_gen concatenando family y genus con '_'
+  fam_gen <- paste(family, genus, sep = "_")
+  
+  # Asignar el nuevo campo fam_gen a la tabla de taxonomía
+  tax_table(physeq_agl_list[[i]]) <- cbind(tax_table(physeq_agl_list[[i]]), fam_gen)
+}
+```
+
+Ahora vamos a filtrar y quedarnos sólamente con los géneros comunes entre todas las cohortes
+
+Esto se hace también para poder encontrar mejor las relaciones reales entre muestras 
+
+```{r include=TRUE}
+
+# Paso 1: Obtener los géneros comunes entre todas las cohortes
+generos_comunes <- Reduce(intersect, lapply(physeq_agl_list, function(x) {
+  # Obtener la columna "Genus" de la tabla de taxonomía
+  generos_cohorte <- as.character(tax_table(x)[, "fam_gen"])
+  # Filtrar los géneros no identificados (NA)
+  generos_cohorte <- generos_cohorte[!is.na(generos_cohorte)]
+  return(generos_cohorte)
+}))
+
+# Paso 2: Filtrar cada objeto phyloseq para incluir solo los géneros comunes
+physeq_agl_list_filtrado <- lapply(physeq_agl_list, function(x) {
+  # Obtener la tabla de taxonomía
+  tax_table_agl <- tax_table(x)
+  
+  # Filtrar la tabla de taxonomía para incluir solo los géneros comunes
+  tax_table_filtrada <- tax_table_agl[tax_table_agl[, "fam_gen"] %in% generos_comunes, ]
+  
+  # Aplicar los cambios a x
+  tax_table(x) <- tax_table_filtrada
+  
+  return(x)
+})
+
+generos_comunes
+physeq_agl_list_filtrado
+
+rename_taxas <- function(agg_physeq, rank_name) {
+  renames <- make.names(as.character(tax_table(agg_physeq)[, rank_name]))
+  taxa_names(agg_physeq) <- renames
+  return(agg_physeq)
+}
+physeq_agl_list_filtrado <- lapply(physeq_agl_list_filtrado, rename_taxas, "fam_gen")
+physeq_agl_list_filtrado
+```
+
+Hay 175 géneros comunes entre las distintas cohortes
+
+Generación archivos csv para la creación de .h5ad
+
+```{r include=TRUE}
+# Especificar la carpeta donde se guardarán los archivos CSV
+save_folder <- "C:/Users/Carla/Desktop/4o/Q1/TFG/samples"
+
+# Guardar otu_table y sample_data de cada objeto phyloseq como archivos CSV
+for (i in seq_along(physeq_agl_list_filtrado)) {
+  otu_table_file <- file.path(save_folder, paste0("otu_table_", i, ".csv"))
+  write.csv(data.frame(otu_table(physeq_agl_list_filtrado[[i]])), file = otu_table_file, row.names = TRUE)
+  
+  sample_data_file <- file.path(save_folder, paste0("sample_data_", i, ".csv"))
+  write.csv(data.frame(sample_data(physeq_agl_list_filtrado[[i]])), file = sample_data_file, row.names = TRUE)
+}
+```

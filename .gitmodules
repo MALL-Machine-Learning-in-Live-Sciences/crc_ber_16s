@@ -1,0 +1,3 @@
+[submodule "mober"]
+	path = mober
+	url = https://github.com/Novartis/MOBER.git

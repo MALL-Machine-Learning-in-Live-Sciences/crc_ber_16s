@@ -1,0 +1,27 @@
+Bootstrap: docker
+From: python:3.8
+
+%labels
+    Maintainer TuNombre
+    Version 1.0
+
+%post
+    # Actualizar e instalar dependencias necesarias
+    apt-get update && apt-get install -y \
+        git \
+        && rm -rf /var/lib/apt/lists/*
+
+    # Clonar el repositorio de mober
+    git clone https://github.com/Novartis/mober.git /opt/mober
+
+    # Instalar mober
+    pip install --upgrade pip
+    pip install torch
+    pip install -e /opt/mober
+    pip install numexpr
+
+%runscript
+    exec "$@"
+
+%startscript
+    exec "$@"
