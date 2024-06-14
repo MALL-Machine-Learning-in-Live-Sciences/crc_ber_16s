@@ -227,6 +227,7 @@ En este apartado se detalla el contenido y la utilidad de cada una de las carpet
 - data
 - mober
 - python 
+- R
 - sing 
 
 Cada una de estas carpetas contiene una serie de ficheros específicos que cumplen con distintas funciones dentro del proyecto.
