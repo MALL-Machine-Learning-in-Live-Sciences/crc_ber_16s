@@ -3,7 +3,7 @@ TFG - GCED
 
 Eliminación de batch-effects en cohortes de microbioma 16S-rRNA mediante variational autoencoders para estudios de cáncer colorectal. 
 
-Conseguiremos esto mediante el uso de MOBER.
+Se estudia esa cuestión mediante el uso de MOBER.
 
 ## MOBER
 
@@ -134,9 +134,9 @@ En este caso:
 
 Singularity es una herramienta que permite la creación, ejecución y manejo de contenedores.
 
-Utilizamos un entorno singularity para la ejecución de MOBER, con el objetivo de contar con un entorno "portátil" en el que se tenga todo lo necesario para la puesta en marcha de la herramienta.  
+Utilizamos un entorno singularity para la ejecución de un contenedor portable de las funciones desarrolladas, encapsulando el entorno y las dependencias del proyecto, a través de un contenedor.
 
-A continuación se detallan los pasos a seguir para la creación del entorno.
+A continuación se detallan tanto los pasos seguidos para la creación del contenedor como los comandos necesarios para su ejecución.
 
 ### Prerrequisitos
 
@@ -163,42 +163,61 @@ sudo make -C ./builddir install
 singularity --version
 ```
 ### Creación de un entorno 
-Una manera sencilla de trabajar dentro de Singularity, y la que utilizaremos, es la generación de una imagen tipo sandbox con la que podremos interactuar. 
-
-El uso de la opción sandbox nos permitirá seguir instalando dentro de la imagen todo lo que necesites, para evitar tener que montar la imagen desde cero cada vez.
+Una manera sencilla de trabajar dentro de Singularity, y la que utilizaremos, es la generación de una imagen tipo sif con la que podremos interactuar. 
 
 Para el montaje de esta imagen principal, crearemos un archivo de texto que define cómo construir una imagen de contenedor Singularity (llamado "recipe"). En nuestro caso, podría ser:
 ```bash
 Bootstrap: docker
-From: ubuntu:20.04
+From: python:3.8
 
 %labels
-    Version v1.0
-
-%help 
-    Singularity image for mober 
-
-%files
-    tu\ruta\a\mober /mnt/
+    Maintainer TuNombre
+    Version 1.0
 
 %post
-    apt-get update 
-    apt-get install -y python3 python3-pip
+    # Actualizar e instalar dependencias necesarias
+    apt-get update && apt-get install -y \
+        git \
+        && rm -rf /var/lib/apt/lists/*
 
-    cd /mnt/mober
-    pip install -e .
+    # Clonar el repositorio de mober
+    git clone https://github.com/Novartis/mober.git /opt/mober
+
+    # Instalar mober
+    pip install --upgrade pip
+    pip install torch
+    pip install -e /opt/mober
+    pip install numexpr
 
 %runscript
-    python3 /mnt/mober/mober.py "$@"
+    exec "$@"
+
+%startscript
+    exec "$@"
 ```
 
 Una vez creado el recipe (recipe.txt), montamos la imagen:
 ```bash
-$ sudo singularity build --sandbox DIRNAME/ recipe_file.txt
+$ sudo singularity build mober_container.sif mober_container.def
+```
+siendo mober_container.sif la imagen a crear y mober_container.def el recipe mostrado
+
+Una vez montado el contenedor, ya se puede ejecutar MOBER dentro de él:
+
+1. Entrenamiento 
+```bash
+singularity run mober_container.sif mober train \
+--train_file data/microbiome_data.h5ad \
+--output_dir . 
 ```
 
-Y entramos en ella:
+2. Proyección 
 ```bash
-$ sudo singularity shell --writable DIRNAME/ 
+singularity run mober_container.sif mober projection \
+--model_dir models \
+--onto Zackular \
+--projection_file data/microbiome_data.h5ad \
+--output_file projection/output.h5ad \
+--decimals 4
 ```
-Ya podríamos empezar a trabjar con nuestra herramienta dentr de nuestro contenedor Singularity.
+
