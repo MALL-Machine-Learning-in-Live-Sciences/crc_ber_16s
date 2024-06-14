@@ -21,6 +21,8 @@ library(dplyr)
 set.seed(1234)
 ```
 
+# Experimento 2 - CV estándar con todas las cohortes variable a predecir Status (cancer/normal)
+
 ```{r include=TRUE}
 run_ml_pipeline <- function(data_ml_pre, data_ml_post, model) {
   

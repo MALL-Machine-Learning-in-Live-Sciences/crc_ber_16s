@@ -1,3 +1,0 @@
-sudo singularity build --sandbox  MOBER singularity.def
-
-singularity run MOBER train --train_file "opt/host/python/microbiome_data.h5ad" --output_dir "/opt/host/tmp_data/test"

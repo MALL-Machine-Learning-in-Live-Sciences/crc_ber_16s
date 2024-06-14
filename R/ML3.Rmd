@@ -22,9 +22,8 @@ library(patchwork)
 set.seed(1234)
 ```
 
-# Experimento 1 - ML con 15 PCAs y variable a predecir sería la cohorte. CV normal (10fold)
+# Experimento 3 - CV individual sobre las cohortes para predicción de Status (cancer/normal)
 
-Datos y PCs
 ```{r include=TRUE}
 subgrupos_pre <- split(data_ml_pre, data_ml_pre$project_pre)
 
@@ -43,6 +42,8 @@ num_muestras_subgrupos_df <- data.frame(
   Project = names(num_muestras_subgrupos),
   Num_Muestras = unlist(num_muestras_subgrupos)
 )
+nuevos_nombres <- c("PRJEB33634_B1", "PRJEB33634_B2", "PRJEB33634_B3", "PRJEB6070_F", "PRJNA290926", "PRJNA763023_H", "Zackular")
+num_muestras_subgrupos_df$Project <- nuevos_nombres
 print(num_muestras_subgrupos_df)
 ```
 

@@ -31,7 +31,7 @@ Datos y PCs
 otu_table_alr <- otu_table(t(alr_datos), taxa_are_rows = TRUE)
 physeq_pre_alr <- phyloseq(otu_table_alr, sample_data(physeq_agl_combined_t))
 
-physeq_ml_alr_pre <- physeq_pre_alr
+physeq_ml_alr_pre <- physeq_pre_alr_filt
 physeq_ml_alr_pre
 
 otu_table_ml_pre <- t(otu_table(physeq_ml_alr_pre))
@@ -46,7 +46,7 @@ summary(data_pre$project)
 table(data_pre$project)
 
 # Data post MOBER 
-physeq_ml_alr <- physeq_output_alr
+physeq_ml_alr <- physeq_output_alr_filt
 physeq_ml_alr
 
 otu_table_ml <- otu_table(physeq_ml_alr)

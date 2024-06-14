@@ -14,7 +14,7 @@ library(tidyr)
 set.seed(1234)
 ```
 
-Creamos el objeto phyloseq con el que crearemos la PCA a partir del output .h5ad que genera hacer proyección con MOBER 
+Creamos el objeto phyloseq sobre el que calcularemos el PCA a partir del output .h5ad que genera hacer proyección con MOBER 
 
 ```{r include=TRUE}
 # Especifica la ruta al directorio que contiene los archivos CSV
@@ -34,7 +34,7 @@ physeq_output_abr <- phyloseq(otu_table, sample_data)
 physeq_output_abr
 ```
 
-Representamos PCA
+Representamos PCAs
 
 Sin normalización
 
@@ -56,6 +56,7 @@ plot_pca_post <- PLSDAbatch::Scatter_Density(object = pca_post,
                                                xlim = c(-3000, 1000), 
                                                ylim = c(-1250, 500))
 ```
+
 CLR 
 
 ```{r include=TRUE}

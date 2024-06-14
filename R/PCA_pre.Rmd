@@ -67,6 +67,7 @@ plot_pca_before <- PLSDAbatch::Scatter_Density(object = pca_before,
                                                xlim = c(0, 12000), 
                                                ylim = c(-20000, 8000))
 ```
+
 Normalización CLR 
 
 ```{r include=TRUE}
@@ -86,6 +87,7 @@ plot_pca_before_clr <- PLSDAbatch::Scatter_Density(object = pca_before_clr,
                                                xlim = c(-20, 20), 
                                                ylim = c(-20, 10))
 ```
+
 Normalización ALR 
 
 ```{r include=TRUE}
@@ -102,7 +104,9 @@ plot_pca_before_alr <- PLSDAbatch::Scatter_Density(object = pca_before_alr,
                                                xlim = c(-20, 20), 
                                                ylim = c(-20, 10))
 ```
+
 Normalización por abundancias relativas 
+
 ```{r include=TRUE}
 # Abundancia relativa 
 otu_abr <- transform(otu, "compositional")

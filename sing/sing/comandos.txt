@@ -1,0 +1,16 @@
+# Build
+sudo singularity build mober_container.sif mober_container.def
+
+# Train
+singularity run mober_container.sif mober train \
+--train_file data/microbiome_data.h5ad \
+--output_dir .
+
+# Projection
+
+singularity run mober_container.sif mober projection \
+--model_dir models \
+--onto Zackular \
+--projection_file data/microbiome_data.h5ad \
+--output_file projection/output.h5ad \
+--decimals 4

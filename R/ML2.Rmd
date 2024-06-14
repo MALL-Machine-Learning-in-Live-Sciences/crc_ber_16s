@@ -22,7 +22,7 @@ library(ggplot2)
 set.seed(1234)
 ```
 
-# Experimento 2 - Leave cohort out variable Status (CRC/Control)
+# Experimento 2 - Leave cohort out CV con todas las cohortes variable a predecir Status (cancer/normal)
 
 ```{r include=TRUE}
 # projects_filt <- c("PRJEB33634_B1", "Zackular")
@@ -256,7 +256,7 @@ ggplot(resultados_cohorte_largos %>% filter(Metric == "Precision"), aes(x = Coho
        x = "Cohorte", y = "Precision", color = "Modelo", shape = "Modelo") +  
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-  ylim(0.5, 1)
+  ylim(0.5, 0.9)
 
 
 ```
