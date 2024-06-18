@@ -1,10 +1,10 @@
 # crc_ber_16s
 TFG - GCED
 
+Eliminación de batch-effects en cohortes de microbioma 16S-rRNA mediante variational autoencoders para estudios de cáncer colorectal. 
+
 - Alumna: Carla Rodríguez Rodríguez 
 - Directores: Carlos Fernández Lozano, José Liñares Blanco y Diego Fernández Edreira
-
-Eliminación de batch-effects en cohortes de microbioma 16S-rRNA mediante variational autoencoders para estudios de cáncer colorectal. 
 
 Se estudia esa cuestión mediante el uso de MOBER.
 
