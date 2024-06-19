@@ -278,3 +278,7 @@ La carpeta sing contiene todo lo necesario para la creación y ejecución del co
 
 - comandos.txt: Archivo que contiene los comandos necesarios para la creación y ejecución de la herramienta.
 - mober_container.def: Archivo con el "recipe" desarrollado para la creación del contenedor.
+
+## Agradecimientos
+
+Expresar mi profundo agradecimiento a la cátedra CICAS, por promover la investigación científica y brindarme la oportunidad de recibir apoyo económico para llevar a cabo este proyecto. Saber que este trabajo puede ser útil para otras personas ha sido una motivación adicional durante todo el proceso.
