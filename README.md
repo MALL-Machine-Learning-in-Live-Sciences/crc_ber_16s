@@ -6,7 +6,7 @@ Eliminación de batch-effects en cohortes de microbioma 16S-rRNA mediante variat
 - Alumna: Carla Rodríguez Rodríguez 
 - Directores: Carlos Fernández Lozano, Diego Fernández Edreira y José Liñares Blanco
 
-Se estudia esa cuestión mediante el uso de MOBER.
+Se estudia esta cuestión mediante el uso de MOBER.
 
 ## MOBER
 
