@@ -14,7 +14,7 @@ library(anndata)
 
 Vamos a trabajar con 10 muestras (10 cohortes preprocesadas) de microbioma.
 
-Estas cohortes de microbioba representan grupos de individuos que comparten características similares y que son estudiados en relación con la composición y función de sus microbiomas. El microbioma se refiere al conjunto de microorganismos, como bacterias, virus, hongos y otros microbios, que colonizan un ambiente específico, como el cuerpo humano.
+Estas cohortes de microbioma representan grupos de individuos que comparten características similares y que son estudiados en relación con la composición y función de sus microbiomas. El microbioma se refiere al conjunto de microorganismos, como bacterias, virus, hongos y otros microbios, que colonizan un ambiente específico, como el cuerpo humano.
 
 Cuando hablamos de este concepto y en este contexto, nos referimos a grupos de personas que comparten ciertas características, y nuestro objetivo es analizarlas para intentar comprender la relación entre ellas y las comunidades microbianas presentes en sus cuerpos.
 
